@@ -5,21 +5,31 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/dopp1e/webingo/backend/internal/store"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
 
 type application struct {
 	config config
+	store  store.Storage
 }
 
 type config struct {
-	addr string
+	dsn string
+	db  dbConfig
+}
+
+type dbConfig struct {
+	dsn          string
+	maxOpenConns int
+	maxIdleConns int
+	maxIdleTime  string
 }
 
 func (app *application) mount() http.Handler {
 	r := chi.NewRouter()
-	
+
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Recoverer)
@@ -36,14 +46,14 @@ func (app *application) mount() http.Handler {
 
 func (app *application) run(mux http.Handler) error {
 	srv := http.Server{
-		Addr: app.config.addr,
-		Handler: mux,
+		Addr:         app.config.dsn,
+		Handler:      mux,
 		WriteTimeout: time.Second * 30,
-		ReadTimeout: time.Second * 10,
-		IdleTimeout: time.Minute,
+		ReadTimeout:  time.Second * 10,
+		IdleTimeout:  time.Minute,
 	}
 
-	log.Printf("Server has started at %s", app.config.addr)
+	log.Printf("Server has started at %s", app.config.dsn)
 
 	return srv.ListenAndServe()
 }
