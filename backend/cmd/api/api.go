@@ -18,6 +18,7 @@ type application struct {
 type config struct {
 	dsn string
 	db  dbConfig
+	env string
 }
 
 type dbConfig struct {
@@ -39,6 +40,10 @@ func (app *application) mount() http.Handler {
 
 	r.Route("/v1", func(r chi.Router) {
 		r.Get("/health", app.healthCheckHandler)
+
+		r.Route("/boards", func(r chi.Router) {
+			r.Put("/", app.createBoardHandler)
+		})
 	})
 
 	return r

@@ -11,6 +11,8 @@ import (
 	"gorm.io/gorm"
 )
 
+const version = "0.0.1"
+
 func main() {
 	db_host := env.GetString("DB_HOST", "localhost")
 	db_user := env.GetString("DB_USER", "admin")
@@ -30,10 +32,11 @@ func main() {
 			maxIdleConns: env.GetInt("DB_MAX_IDLE_CONNS", 30),
 			maxIdleTime:  env.GetString("DB_MAX_IDLE_TIME", "15m"),
 		},
+		env: env.GetString("ENV", "dev"),
 	}
 
 	db, err := gorm.Open(postgres.Open(cfg.db.dsn), &gorm.Config{
-		DisableForeignKeyConstraintWhenMigrating: true,
+		//DisableForeignKeyConstraintWhenMigrating: true,
 	})
 	if err != nil {
 		log.Panic(err)
@@ -65,8 +68,6 @@ func main() {
 		}
 		log.Println("Admin user created successfully.")
 	}
-
-	log.Println(adminUser.ID)
 
 	app := &application{
 		config: cfg,
