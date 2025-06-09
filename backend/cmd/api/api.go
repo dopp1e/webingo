@@ -8,11 +8,13 @@ import (
 	"github.com/dopp1e/webingo/backend/internal/store"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-playground/validator/v10"
 )
 
 type application struct {
-	config config
-	store  store.Storage
+	config    config
+	store     store.Storage
+	validator validator.Validate
 }
 
 type config struct {
@@ -43,6 +45,10 @@ func (app *application) mount() http.Handler {
 
 		r.Route("/boards", func(r chi.Router) {
 			r.Put("/", app.createBoardHandler)
+
+			r.Route("/{boardID}", func(r chi.Router) {
+				r.Get("/", app.getBoardHandler)
+			})
 		})
 	})
 

@@ -7,6 +7,7 @@ import (
 	"github.com/dopp1e/webingo/backend/internal/env"
 	"github.com/dopp1e/webingo/backend/internal/model"
 	"github.com/dopp1e/webingo/backend/internal/store"
+	"github.com/go-playground/validator/v10"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -69,9 +70,12 @@ func main() {
 		log.Println("Admin user created successfully.")
 	}
 
+	validate := validator.New(validator.WithRequiredStructEnabled())
+
 	app := &application{
-		config: cfg,
-		store:  store,
+		config:    cfg,
+		store:     store,
+		validator: *validate,
 	}
 
 	mux := app.mount()

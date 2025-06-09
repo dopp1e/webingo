@@ -17,9 +17,9 @@ type Base struct {
 
 // BoardPayload represents the data that is accepted when creating a board.
 type BoardPayload struct {
-	Name        string  `json:"name"`
-	Description string  `json:"description"`
-	Spaces      []Space `gorm:"many2many:board_spaces;" json:"spaces"`
+	Name        string  `json:"name" validate:"required,min=3,max=100"`
+	Description string  `json:"description" validate:"max=500"`
+	Spaces      []Space `gorm:"many2many:board_spaces;" json:"spaces" validate:"dive"` // Spaces on the board
 }
 
 // Board represents a bingo board.
@@ -31,7 +31,7 @@ type Board struct {
 // Space represents a space on the bingo board.
 type Space struct {
 	Base
-	Content string  `json:"content"`
+	Content string  `gorm:"unique;not null" json:"content" validate:"required,min=1,max=100"`
 	Boards  []Board `gorm:"many2many:board_spaces;" json:"boards"`
 }
 
