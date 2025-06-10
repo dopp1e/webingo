@@ -6,6 +6,7 @@ import (
 
 	"github.com/dopp1e/webingo/backend/internal/env"
 	"github.com/dopp1e/webingo/backend/internal/model"
+	"github.com/dopp1e/webingo/backend/internal/service"
 	"github.com/dopp1e/webingo/backend/internal/store"
 	"github.com/go-playground/validator/v10"
 	"gorm.io/driver/postgres"
@@ -56,25 +57,19 @@ func main() {
 		Password: admin_password,
 	}
 
-	adminExists, err := store.Users.Exists(context.Background(), adminUser.Username)
-	if err != nil {
-		log.Panicf("Failed to check if admin user exists: %v", err)
-	}
+	service := service.NewService(store, db)
 
-	if adminExists {
-		log.Println("Admin user already exists, skipping creation.")
-	} else {
-		if err := store.Users.Create(context.Background(), adminUser); err != nil {
-			log.Panicf("Failed to create admin user: %v", err)
-		}
-		log.Println("Admin user created successfully.")
+	_, uerr := service.Users.CreateIfNotExists(context.Background(), adminUser)
+
+	if uerr != nil {
+		log.Printf("error creating admin user: %v\n", uerr)
 	}
 
 	validate := validator.New(validator.WithRequiredStructEnabled())
 
 	app := &application{
 		config:    cfg,
-		store:     store,
+		service:   *service,
 		validator: *validate,
 	}
 

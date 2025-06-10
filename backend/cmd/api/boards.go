@@ -28,7 +28,7 @@ func (app *application) createBoardHandler(w http.ResponseWriter, r *http.Reques
 
 	ctx := r.Context()
 
-	if err := app.store.Boards.Create(ctx, board); err != nil {
+	if err := app.service.Boards.CreateBoard(ctx, board); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
@@ -48,7 +48,7 @@ func (app *application) getBoardHandler(w http.ResponseWriter, r *http.Request) 
 
 	ctx := r.Context()
 
-	board, err := app.store.Boards.GetById(ctx, boardID)
+	board, err := app.service.Boards.GetById(ctx, boardID)
 
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {

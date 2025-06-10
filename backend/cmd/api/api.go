@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/dopp1e/webingo/backend/internal/store"
+	"github.com/dopp1e/webingo/backend/internal/service"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-playground/validator/v10"
@@ -13,7 +13,7 @@ import (
 
 type application struct {
 	config    config
-	store     store.Storage
+	service   service.Service
 	validator validator.Validate
 }
 
