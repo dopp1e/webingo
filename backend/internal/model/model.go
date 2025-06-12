@@ -80,6 +80,11 @@ type User struct {
 	Password string `gorm:"not null" json:"-"`                    // Password for the user, not exposed in JSON
 }
 
+// context key strings
+type boardkey string
+
+const BoardCtx boardkey = "board"
+
 // prepareConstraint checks if a constraint exists for the model and creates it if not.
 func prepareConstraint(db *gorm.DB, model interface{}, constraint string) {
 	if !db.Migrator().HasConstraint(model, constraint) {
