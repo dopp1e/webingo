@@ -7,11 +7,11 @@ import (
 	"gorm.io/gorm"
 )
 
-type UsersStore struct {
+type UserStore struct {
 	db *gorm.DB
 }
 
-func (s *UsersStore) Create(ctx context.Context, user *model.User) error {
+func (s *UserStore) Create(ctx context.Context, user *model.User) error {
 	result := s.db.WithContext(ctx).Create(user)
 
 	if result.Error != nil {
@@ -21,7 +21,7 @@ func (s *UsersStore) Create(ctx context.Context, user *model.User) error {
 	return nil
 }
 
-func (s *UsersStore) GetByUsername(ctx context.Context, username string) (*model.User, error) {
+func (s *UserStore) GetByUsername(ctx context.Context, username string) (*model.User, error) {
 	var user model.User
 	result := s.db.WithContext(ctx).Where("username = ?", username).First(&user)
 
@@ -32,7 +32,7 @@ func (s *UsersStore) GetByUsername(ctx context.Context, username string) (*model
 	return &user, nil // User found
 }
 
-func (s *UsersStore) Exists(ctx context.Context, username string) (bool, error) {
+func (s *UserStore) Exists(ctx context.Context, username string) (bool, error) {
 	var count int64
 	result := s.db.WithContext(ctx).Model(&model.User{}).Where("username = ?", username).Count(&count)
 

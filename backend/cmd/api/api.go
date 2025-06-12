@@ -48,6 +48,8 @@ func (app *application) mount() http.Handler {
 
 			r.Route("/{boardID}", func(r chi.Router) {
 				r.Get("/", app.getBoardHandler)
+				r.Put("/", app.putBoardHandler)
+				r.Delete("/", app.deleteBoardHandler)
 			})
 		})
 	})

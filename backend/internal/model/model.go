@@ -41,6 +41,7 @@ type Game struct {
 	BoardID        uuid.UUID    `json:"board_id"` // Foreign key to the Board
 	Board          Board        `gorm:"foreignKey:BoardID"`
 	YoutubeVideoID *string      `json:"youtubeVideoId,omitempty"` // Optional YouTube video ID for the game
+	Secret         string       `json:"secret"`                   // Secret for the game, used to disallow updating the game by other players
 	Height         int          `json:"height"`                   // Height of the bingo board
 	Width          int          `json:"width"`                    // Width of the bingo board
 	Finished       bool         `json:"finished"`                 // Indicates if the game is finished

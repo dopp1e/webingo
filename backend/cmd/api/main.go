@@ -7,7 +7,6 @@ import (
 	"github.com/dopp1e/webingo/backend/internal/env"
 	"github.com/dopp1e/webingo/backend/internal/model"
 	"github.com/dopp1e/webingo/backend/internal/service"
-	"github.com/dopp1e/webingo/backend/internal/store"
 	"github.com/go-playground/validator/v10"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -50,14 +49,12 @@ func main() {
 
 	log.Println("db connect")
 
-	store := store.NewStorage(db)
-
 	adminUser := &model.User{
 		Username: admin_username,
 		Password: admin_password,
 	}
 
-	service := service.NewService(store, db)
+	service := service.NewService(db)
 
 	_, uerr := service.Users.CreateIfNotExists(context.Background(), adminUser)
 

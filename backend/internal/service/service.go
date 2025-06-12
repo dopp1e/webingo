@@ -4,17 +4,17 @@ import (
 	"context"
 
 	"github.com/dopp1e/webingo/backend/internal/model"
-	"github.com/dopp1e/webingo/backend/internal/store"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 type Service struct {
-	storage store.Storage
-	db      *gorm.DB
-	Boards  interface {
+	db     *gorm.DB
+	Boards interface {
 		CreateBoard(context.Context, *model.Board) error
 		GetById(context.Context, uuid.UUID) (*model.Board, error)
+		UpdateBoard(context.Context, *model.Board) error
+		DeleteBoard(context.Context, uuid.UUID) error
 	}
 	Users interface {
 		Create(context.Context, *model.User) error
@@ -24,17 +24,14 @@ type Service struct {
 	}
 }
 
-func NewService(storage store.Storage, db *gorm.DB) *Service {
+func NewService(db *gorm.DB) *Service {
 	return &Service{
-		storage: storage,
-		db:      db,
+		db: db,
 		Boards: &BoardService{
-			storage: storage,
-			db:      db,
+			db: db,
 		},
 		Users: &UserService{
-			storage: storage,
-			db:      db,
+			db: db,
 		},
 	}
 }

@@ -9,17 +9,26 @@ import (
 )
 
 type UserService struct {
-	storage store.Storage
-	db      *gorm.DB
+	db *gorm.DB
 }
 
-func (s *UserService) Create(context.Context, *model.User) error {
-	err := s.storage.Users.Create(context.Background(), &model.User{})
+func (s *UserService) Create(ctx context.Context, user *model.User) error {
+	tx, err := store.StartTransaction(ctx, s.db)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback() // defer rollback in case of error
+	err = tx.Users().Create(context.Background(), user)
 	return err
 }
 
 func (s *UserService) GetByUsername(ctx context.Context, username string) (*model.User, error) {
-	user, err := s.storage.Users.GetByUsername(ctx, username)
+	tx, err := store.StartTransaction(ctx, s.db)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback() // defer rollback in case of error
+	user, err := tx.Users().GetByUsername(ctx, username)
 	if err != nil {
 		return nil, err
 	}
@@ -27,7 +36,12 @@ func (s *UserService) GetByUsername(ctx context.Context, username string) (*mode
 }
 
 func (s *UserService) Exists(ctx context.Context, username string) (bool, error) {
-	exists, err := s.storage.Users.Exists(ctx, username)
+	tx, err := store.StartTransaction(ctx, s.db)
+	if err != nil {
+		return false, err
+	}
+	defer tx.Rollback() // defer rollback in case of error
+	exists, err := tx.Users().Exists(ctx, username)
 	if err != nil {
 		return false, err
 	}
@@ -35,7 +49,12 @@ func (s *UserService) Exists(ctx context.Context, username string) (bool, error)
 }
 
 func (s *UserService) CreateIfNotExists(ctx context.Context, user *model.User) (*model.User, error) {
-	exists, err := s.storage.Users.Exists(ctx, user.Username)
+	tx, err := store.StartTransaction(ctx, s.db)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback() // defer rollback in case of error
+	exists, err := tx.Users().Exists(ctx, user.Username)
 
 	if err != nil {
 		return nil, err
@@ -49,7 +68,7 @@ func (s *UserService) CreateIfNotExists(ctx context.Context, user *model.User) (
 		return found, nil
 	}
 
-	if err := s.storage.Users.Create(ctx, user); err != nil {
+	if err := tx.Users().Create(ctx, user); err != nil {
 		return nil, err
 	}
 

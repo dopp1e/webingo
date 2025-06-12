@@ -35,3 +35,29 @@ func (s *BoardStore) GetById(ctx context.Context, boardId uuid.UUID) (*model.Boa
 
 	return &board, nil
 }
+
+func (s *BoardStore) Update(ctx context.Context, board *model.Board) error {
+	result := s.db.WithContext(ctx).Save(board)
+	if result.Error != nil {
+		return result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+
+	return nil
+}
+
+func (s *BoardStore) Delete(ctx context.Context, board *model.Board) error {
+	result := s.db.WithContext(ctx).Delete(board)
+	if result.Error != nil {
+		return result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+
+	return nil
+}
