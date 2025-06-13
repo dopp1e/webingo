@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 
+	"github.com/dopp1e/webingo/backend/internal/dto"
 	"github.com/dopp1e/webingo/backend/internal/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -11,9 +12,9 @@ import (
 type Service struct {
 	db     *gorm.DB
 	Boards interface {
-		CreateBoard(context.Context, *model.Board) error
+		CreateBoard(context.Context, *dto.BoardCreateRequest, uuid.UUID) (*model.Board, error)
 		GetById(context.Context, uuid.UUID) (*model.Board, error)
-		UpdateBoard(context.Context, *model.Board) error
+		UpdateBoard(context.Context, *dto.BoardUpdateRequest, uuid.UUID) (*model.Board, error)
 		DeleteBoard(context.Context, uuid.UUID) error
 	}
 	Users interface {

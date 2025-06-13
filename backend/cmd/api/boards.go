@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/dopp1e/webingo/backend/internal/dto"
 	"github.com/dopp1e/webingo/backend/internal/errors"
 	"github.com/dopp1e/webingo/backend/internal/model"
 	"github.com/go-chi/chi/v5"
@@ -41,7 +42,7 @@ func (app *application) boardContextMiddleware(next http.Handler) http.Handler {
 
 func (app *application) createBoardHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO: add verification of user making rqeust
-	var payload model.BoardPayload
+	var payload dto.BoardCreateRequest
 	if err := readJSON(w, r, &payload); err != nil {
 		app.badRequestResponse(w, r, err)
 		return
@@ -52,13 +53,10 @@ func (app *application) createBoardHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	board := &model.Board{
-		BoardPayload: payload,
-	}
-
 	ctx := r.Context()
 
-	if err := app.service.Boards.CreateBoard(ctx, board); err != nil {
+	board, err := app.service.Boards.CreateBoard(ctx, &payload, uuid.New()) // Replace uuid.New() with the actual user ID from the context or session
+	if err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
@@ -88,7 +86,7 @@ func (app *application) putBoardHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	var payload model.BoardPayload
+	var payload dto.BoardUpdateRequest
 	if err := readJSON(w, r, &payload); err != nil {
 		app.badRequestResponse(w, r, err)
 		return
@@ -99,14 +97,8 @@ func (app *application) putBoardHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	board = &model.Board{
-		Base: model.Base{
-			ID: board.ID,
-		},
-		BoardPayload: payload,
-	}
-
-	if err := app.service.Boards.UpdateBoard(r.Context(), board); err != nil {
+	board, err := app.service.Boards.UpdateBoard(r.Context(), &payload, board.ID)
+	if err != nil {
 		switch err {
 		case errors.ErrNotFound:
 			app.notFoundResponse(w, r, err)
