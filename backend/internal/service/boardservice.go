@@ -59,12 +59,20 @@ func (s *BoardService) GetById(ctx context.Context, boardId uuid.UUID) (*model.B
 	}
 	defer tx.Rollback() // defer rollback in case of error
 
-	request, err := tx.Boards().GetById(ctx, boardId)
+	board, err := tx.Boards().GetById(ctx, boardId)
 	if err != nil {
 		return nil, err
 	}
 
-	return request, nil
+	if board == nil {
+		return nil, errors.ErrNotFound // No board found
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return board, nil
 }
 
 func (s *BoardService) UpdateBoard(ctx context.Context, request *dto.BoardUpdateRequest, boardID uuid.UUID) (*model.Board, error) {

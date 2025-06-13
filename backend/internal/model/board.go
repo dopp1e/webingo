@@ -15,4 +15,6 @@ type Board struct {
 	Comments []BoardComment `gorm:"foreignKey:BoardID"`
 	Votes    []BoardVote    `gorm:"foreignKey:BoardID"`
 	Spaces   []Space        `gorm:"many2many:board_spaces;"` // GORM tag, no json tag if Space has Board reference
+
+	Collections []BoardCollection `gorm:"many2many:collection_boards;" json:"-"` // json:"-" to prevent recursion/hide by default
 }

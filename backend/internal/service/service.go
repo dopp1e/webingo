@@ -23,6 +23,11 @@ type Service struct {
 		Exists(context.Context, string) (bool, error)
 		CreateIfNotExists(context.Context, *model.User) (*model.User, error)
 	}
+	Roles interface {
+		CreateRole(context.Context, *model.Role) error
+		GetRoleByName(context.Context, string) (*model.Role, error)
+		CreateRoleIfNotExists(context.Context, *model.Role) (*model.Role, error)
+	}
 }
 
 func NewService(db *gorm.DB) *Service {
@@ -32,6 +37,9 @@ func NewService(db *gorm.DB) *Service {
 			db: db,
 		},
 		Users: &UserService{
+			db: db,
+		},
+		Roles: &RoleService{
 			db: db,
 		},
 	}

@@ -29,11 +29,18 @@ type GameStoreInterface interface {
 	Create(context.Context, *model.Game) error
 }
 
+type RoleInterface interface {
+	Create(context.Context, *model.Role) error
+	GetByName(context.Context, string) (*model.Role, error)
+	Exists(context.Context, string) (bool, error)
+}
+
 type StorageInterface interface {
 	Boards() BoardStoreInterface
 	Users() UserStoreInterface
 	Spaces() SpaceStoreInterface
 	Games() GameStoreInterface
+	Roles() RoleInterface
 }
 
 type Storage struct {
@@ -41,12 +48,14 @@ type Storage struct {
 	users  UserStoreInterface
 	spaces SpaceStoreInterface
 	games  GameStoreInterface
+	roles  RoleInterface
 }
 
 func (s *Storage) Boards() BoardStoreInterface { return s.boards }
 func (s *Storage) Users() UserStoreInterface   { return s.users }
 func (s *Storage) Spaces() SpaceStoreInterface { return s.spaces }
 func (s *Storage) Games() GameStoreInterface   { return s.games }
+func (s *Storage) Roles() RoleInterface        { return s.roles }
 
 type TransactionalStorage interface {
 	StorageInterface
@@ -61,6 +70,7 @@ func NewStorage(db *gorm.DB) *Storage {
 		users:  &UserStore{db},
 		spaces: &SpaceStore{db},
 		games:  &GameStore{db},
+		roles:  &RoleStore{db},
 	}
 }
 

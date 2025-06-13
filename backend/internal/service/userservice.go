@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 
+	"github.com/dopp1e/webingo/backend/internal/errors"
 	"github.com/dopp1e/webingo/backend/internal/model"
 	"github.com/dopp1e/webingo/backend/internal/store"
 	"gorm.io/gorm"
@@ -18,7 +19,15 @@ func (s *UserService) Create(ctx context.Context, user *model.User) error {
 		return err
 	}
 	defer tx.Rollback() // defer rollback in case of error
+
 	err = tx.Users().Create(context.Background(), user)
+	if err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
 	return err
 }
 
@@ -32,6 +41,13 @@ func (s *UserService) GetByUsername(ctx context.Context, username string) (*mode
 	if err != nil {
 		return nil, err
 	}
+	if user == nil {
+		return nil, errors.ErrNotFound // No user found
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
 	return user, nil
 }
 
@@ -41,10 +57,16 @@ func (s *UserService) Exists(ctx context.Context, username string) (bool, error)
 		return false, err
 	}
 	defer tx.Rollback() // defer rollback in case of error
+
 	exists, err := tx.Users().Exists(ctx, username)
 	if err != nil {
 		return false, err
 	}
+
+	if err := tx.Commit(); err != nil {
+		return false, err
+	}
+
 	return exists, nil
 }
 
@@ -54,8 +76,8 @@ func (s *UserService) CreateIfNotExists(ctx context.Context, user *model.User) (
 		return nil, err
 	}
 	defer tx.Rollback() // defer rollback in case of error
-	exists, err := tx.Users().Exists(ctx, user.Username)
 
+	exists, err := tx.Users().Exists(ctx, user.Username)
 	if err != nil {
 		return nil, err
 	}
@@ -69,6 +91,10 @@ func (s *UserService) CreateIfNotExists(ctx context.Context, user *model.User) (
 	}
 
 	if err := tx.Users().Create(ctx, user); err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 

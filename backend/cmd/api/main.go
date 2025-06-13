@@ -49,18 +49,30 @@ func main() {
 
 	log.Println("db connect")
 
+	service := service.NewService(db)
+
+	adminRole := &model.Role{
+		Name:        "admin",
+		Description: "Administrator role with full access",
+		Level:       1,
+	}
+
+	adminRole, err = service.Roles.CreateRoleIfNotExists(context.Background(), adminRole)
+	if err != nil {
+		log.Panicf("failed to create admin role: %v", err)
+	}
 	adminUser := &model.User{
 		Username: admin_username,
 		Password: admin_password,
+		Email:    "admin@example.com",
+		IsActive: true,
+		RoleID:   adminRole.ID,
 	}
-
-	service := service.NewService(db)
-
-	_, uerr := service.Users.CreateIfNotExists(context.Background(), adminUser)
-
-	if uerr != nil {
-		log.Printf("error creating admin user: %v\n", uerr)
+	adminUser, err = service.Users.CreateIfNotExists(context.Background(), adminUser)
+	if err != nil {
+		log.Panicf("failed to create admin user: %v", err)
 	}
+	log.Printf("admin user available: %s with role %s", adminUser.Username, adminRole.Name)
 
 	validate := validator.New(validator.WithRequiredStructEnabled())
 

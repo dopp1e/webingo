@@ -12,10 +12,10 @@ type Game struct {
 	Privacy        *bool   `json:"private"`
 	Password       *string `json:"-"` // Password for private games, hidden from JSON output
 
-	BoardID uuid.UUID `json:"boardId"`
-	Board   Board     `gorm:"foreignKey:BoardID"`
-	UserID  uuid.UUID `json:"userId"` // User who created the game
-	User    User      `gorm:"foreignKey:UserID"`
+	BoardID uuid.UUID  `json:"boardId"`
+	Board   Board      `gorm:"foreignKey:BoardID"`
+	UserID  *uuid.UUID `json:"userId,omitempty"` // User who created the game, optional for anonymous games
+	User    *User      `gorm:"foreignKey:UserID"`
 
 	Cells       []Cell        `gorm:"foreignKey:GameID" json:"cells"`
 	PlayerMoves []PlayerMove  `gorm:"foreignKey:GameID" json:"playerMoves"`
