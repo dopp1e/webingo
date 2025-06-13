@@ -21,3 +21,7 @@ func (app *application) badRequestResponse(w http.ResponseWriter, r *http.Reques
 func (app *application) notFoundResponse(w http.ResponseWriter, r *http.Request, err error) {
 	generalErrorResponse(w, r, err, http.StatusNotFound, err.Error())
 }
+
+func (app *application) conflictResponse(w http.ResponseWriter, r *http.Request, err error) {
+	generalErrorResponse(w, r, err, http.StatusConflict, err.Error())
+}

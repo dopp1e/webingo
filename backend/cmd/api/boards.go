@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/dopp1e/webingo/backend/internal/errors"
 	"github.com/dopp1e/webingo/backend/internal/model"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -29,11 +30,11 @@ func (app *application) boardContextMiddleware(next http.Handler) http.Handler {
 			return
 		}
 		if board == nil {
-			app.notFoundResponse(w, r, gorm.ErrRecordNotFound)
+			app.notFoundResponse(w, r, errors.ErrNotFound)
 			return
 		}
 
-		ctx = context.WithValue(ctx, model.BoardCtx, board)
+		ctx = context.WithValue(ctx, model.Context.Board, board)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -62,7 +63,7 @@ func (app *application) createBoardHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if err := writeJSON(w, http.StatusCreated, board); err != nil {
+	if err := app.jsonResponse(w, http.StatusCreated, board); err != nil {
 		app.internalServerError(w, r, err)
 	}
 }
@@ -71,11 +72,11 @@ func (app *application) getBoardHandler(w http.ResponseWriter, r *http.Request) 
 	board := getBoardFromContext(r)
 
 	if board == nil {
-		app.notFoundResponse(w, r, gorm.ErrRecordNotFound)
+		app.notFoundResponse(w, r, errors.ErrNotFound)
 		return
 	}
 
-	if err := writeJSON(w, http.StatusOK, board); err != nil {
+	if err := app.jsonResponse(w, http.StatusOK, board); err != nil {
 		app.internalServerError(w, r, err)
 	}
 }
@@ -83,7 +84,7 @@ func (app *application) getBoardHandler(w http.ResponseWriter, r *http.Request) 
 func (app *application) putBoardHandler(w http.ResponseWriter, r *http.Request) {
 	board := getBoardFromContext(r)
 	if board == nil {
-		app.notFoundResponse(w, r, gorm.ErrRecordNotFound)
+		app.notFoundResponse(w, r, errors.ErrNotFound)
 		return
 	}
 
@@ -106,11 +107,20 @@ func (app *application) putBoardHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if err := app.service.Boards.UpdateBoard(r.Context(), board); err != nil {
-		app.internalServerError(w, r, err)
-		return
+		switch err {
+		case errors.ErrNotFound:
+			app.notFoundResponse(w, r, err)
+			return
+		case errors.ErrDataVersionMismatch:
+			app.conflictResponse(w, r, err)
+			return
+		default:
+			app.internalServerError(w, r, err)
+			return
+		}
 	}
 
-	if err := writeJSON(w, http.StatusOK, board); err != nil {
+	if err := app.jsonResponse(w, http.StatusOK, board); err != nil {
 		app.internalServerError(w, r, err)
 	}
 }
@@ -135,13 +145,13 @@ func (app *application) deleteBoardHandler(w http.ResponseWriter, r *http.Reques
 	}
 
 	w.WriteHeader(http.StatusOK)
-	if err := writeJSON(w, http.StatusOK, map[string]string{"message": "Board deleted successfully"}); err != nil {
+	if err := app.jsonResponse(w, http.StatusOK, "board deleted successfully"); err != nil {
 		app.internalServerError(w, r, err)
 	}
 }
 
 func getBoardFromContext(r *http.Request) *model.Board {
-	board, ok := r.Context().Value(model.BoardCtx).(*model.Board)
+	board, ok := r.Context().Value(model.Context.Board).(*model.Board)
 	if !ok {
 		return nil
 	}

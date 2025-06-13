@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 
+	"github.com/dopp1e/webingo/backend/internal/errors"
 	"github.com/dopp1e/webingo/backend/internal/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -30,7 +31,7 @@ func (s *BoardStore) GetById(ctx context.Context, boardId uuid.UUID) (*model.Boa
 	}
 
 	if result.RowsAffected == 0 {
-		return nil, gorm.ErrRecordNotFound
+		return nil, errors.ErrNotFound
 	}
 
 	return &board, nil
@@ -43,7 +44,7 @@ func (s *BoardStore) Update(ctx context.Context, board *model.Board) error {
 	}
 
 	if result.RowsAffected == 0 {
-		return gorm.ErrRecordNotFound
+		return errors.ErrNotFound
 	}
 
 	return nil
@@ -56,7 +57,7 @@ func (s *BoardStore) Delete(ctx context.Context, board *model.Board) error {
 	}
 
 	if result.RowsAffected == 0 {
-		return gorm.ErrRecordNotFound
+		return errors.ErrNotFound
 	}
 
 	return nil

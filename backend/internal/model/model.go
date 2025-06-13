@@ -17,9 +17,13 @@ type Base struct {
 
 // BoardPayload represents the data that is accepted when creating a board.
 type BoardPayload struct {
-	Name        string  `json:"name" validate:"required,min=3,max=100"`
-	Description string  `json:"description" validate:"max=500"`
-	Spaces      []Space `gorm:"many2many:board_spaces;" json:"spaces" validate:"dive"` // Spaces on the board
+	Name        string    `json:"name" validate:"required,min=3,max=100"`
+	Description string    `json:"description" validate:"max=500"`
+	Version     int       `gorm:"default:1;column:version" json:"version"`               // Version for optimistic locking
+	UserID      uuid.UUID `json:"userId"`                                                // Foreign key to the User who created the board
+	User        User      `gorm:"foreignKey:UserID" json:"user"`                         // User who created the board
+	Tags        []string  `gorm:"type:text[]" json:"tags" validate:"dive,min=1,max=20"`  // Tags for the board
+	Spaces      []Space   `gorm:"many2many:board_spaces;" json:"spaces" validate:"dive"` // Spaces on the board
 }
 
 // Board represents a bingo board.
@@ -33,6 +37,15 @@ type Space struct {
 	Base
 	Content string  `gorm:"unique;not null" json:"content" validate:"required,min=1,max=100"`
 	Boards  []Board `gorm:"many2many:board_spaces;" json:"boards"`
+}
+
+type Comment struct {
+	Base
+	BoardID uuid.UUID `json:"boardId"` // Foreign key to the Board
+	Board   Board     `gorm:"foreignKey:BoardID"`
+	Content string    `gorm:"not null" json:"content" validate:"required,min=1,max=500"` // Content of the comment
+	UserID  uuid.UUID `json:"userId"`                                                    // Foreign key to the User who made the comment
+	User    User      `gorm:"foreignKey:UserID"`                                         // User who made the comment
 }
 
 // Game represents a single player's bingo game instance.
@@ -73,23 +86,32 @@ type PlayerMove struct {
 	Timestamp int       `json:"timestamp"`         // Timestamp of the move (e.g., seconds into the video)
 }
 
-// User represents a user in the system, at the moment, only admin users are supported.
+type Role struct {
+	Base
+	Name        string `gorm:"uniqueIndex;not null" json:"name"` // Unique name for the role
+	Description string `gorm:"not null" json:"description"`      // Description of the role
+	Level       int    `gorm:"not null" json:"level"`            // Level of the role, used for permissions
+}
+
+// User represents a user in the system.
 type User struct {
 	Base
-	Username string `gorm:"uniqueIndex;not null" json:"username"` // Unique username for the user
-	Password string `gorm:"not null" json:"-"`                    // Password for the user, not exposed in JSON
+	Username string    `gorm:"uniqueIndex;not null" json:"username"` // Unique username for the user
+	Email    string    `gorm:"uniqueIndex;not null" json:"email"`    // Unique email for the user
+	Password string    `gorm:"not null" json:"-"`                    // Password for the user, not exposed in JSON
+	IsActive bool      `gorm:"default:true" json:"isActive"`         // Indicates if the user is active
+	RoleID   uuid.UUID `json:"roleId"`                               // Foreign key to the Role
+	Role     Role      `gorm:"foreignKey:RoleID"`                    // Role of the user
 }
 
 // context key strings
 type boardkey string
+type contextModel struct {
+	Board boardkey
+}
 
-const BoardCtx boardkey = "board"
-
-// prepareConstraint checks if a constraint exists for the model and creates it if not.
-func prepareConstraint(db *gorm.DB, model interface{}, constraint string) {
-	if !db.Migrator().HasConstraint(model, constraint) {
-		db.Migrator().CreateConstraint(model, constraint)
-	}
+var Context = contextModel{
+	Board: "board",
 }
 
 // Migrate performs the database migrations for the bingo application models.
@@ -100,12 +122,6 @@ func Migrate(db *gorm.DB) error {
 	if err != nil {
 		return err
 	}
-	// set up the foreign key constraints, if not created by AutoMigrate or not made by previous migrations.
-	// prepareConstraint(db, &Board{}, "Spaces")
-	// prepareConstraint(db, &Space{}, "Boards")
-	// prepareConstraint(db, &Space{}, "Cells")
-	// prepareConstraint(db, &Game{}, "Board")
-	// prepareConstraint(db, &PlayerMove{}, "Game")
 
 	return nil
 }

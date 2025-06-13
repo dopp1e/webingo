@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 
+	"github.com/dopp1e/webingo/backend/internal/errors"
 	"github.com/dopp1e/webingo/backend/internal/model"
 	"github.com/dopp1e/webingo/backend/internal/store"
 	"github.com/google/uuid"
@@ -64,6 +65,19 @@ func (s *BoardService) UpdateBoard(ctx context.Context, board *model.Board) erro
 	}
 	defer tx.Rollback() // defer rollback in case of error
 
+	// ensure the board version matches the one in the database
+	existingBoard, err := tx.Boards().GetById(ctx, board.ID)
+	if err != nil {
+		return err
+	}
+	if existingBoard == nil {
+		return errors.ErrNotFound
+	}
+
+	if existingBoard.Version != board.Version {
+		return errors.ErrDataVersionMismatch
+	}
+
 	var preparedSpaces []model.Space
 	for _, incomingSpace := range board.Spaces {
 		foundOrCreatedSpace, err := tx.Spaces().FindOrCreateByContent(ctx, &incomingSpace)
@@ -74,6 +88,7 @@ func (s *BoardService) UpdateBoard(ctx context.Context, board *model.Board) erro
 	}
 
 	board.Spaces = preparedSpaces
+	board.Version++ // increment the version for optimistic concurrency control
 
 	if err := tx.Boards().Update(ctx, board); err != nil {
 		return err
@@ -99,7 +114,7 @@ func (s *BoardService) DeleteBoard(ctx context.Context, boardId uuid.UUID) error
 	}
 
 	if board == nil {
-		return gorm.ErrRecordNotFound
+		return errors.ErrNotFound
 	}
 
 	if err := tx.Model(board).Association("Spaces").Clear(); err != nil {
