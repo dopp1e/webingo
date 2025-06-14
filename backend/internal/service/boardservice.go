@@ -8,6 +8,7 @@ import (
 	"github.com/dopp1e/webingo/backend/internal/model"
 	"github.com/dopp1e/webingo/backend/internal/store"
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 	"gorm.io/gorm"
 )
 
@@ -35,7 +36,7 @@ func (s *BoardService) CreateBoard(ctx context.Context, request *dto.BoardCreate
 	board := &model.Board{
 		Name:        request.Name,
 		Description: request.Description,
-		Tags:        request.Tags,
+		Tags:        pq.StringArray(request.Tags),
 		Version:     1,
 		UserID:      userID,
 		Spaces:      preparedSpaces,
@@ -112,7 +113,7 @@ func (s *BoardService) UpdateBoard(ctx context.Context, request *dto.BoardUpdate
 		Name:        request.Name,
 		Description: request.Description,
 		Version:     request.Version + 1,
-		Tags:        request.Tags,
+		Tags:        pq.StringArray(request.Tags),
 		Spaces:      preparedSpaces,
 	}
 
@@ -160,4 +161,37 @@ func (s *BoardService) DeleteBoard(ctx context.Context, boardId uuid.UUID) error
 	}
 
 	return nil
+}
+
+func (s *BoardService) AddComment(ctx context.Context, boardId uuid.UUID, userId uuid.UUID, request *dto.CommentPutRequest) (*model.BoardComment, error) {
+	tx, err := store.StartTransaction(ctx, s.db)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback() // defer rollback in case of error
+
+	exists, err := tx.Boards().Exists(ctx, boardId)
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, errors.ErrNotFound
+	}
+
+	comment := &model.BoardComment{
+		Content: request.Content,
+		BoardID: boardId,
+		UserID:  userId,
+	}
+
+	if err := tx.BoardComments().Create(ctx, comment); err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return comment, nil
+
 }

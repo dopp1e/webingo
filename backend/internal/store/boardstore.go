@@ -62,3 +62,14 @@ func (s *BoardStore) Delete(ctx context.Context, board *model.Board) error {
 
 	return nil
 }
+
+func (s *BoardStore) Exists(ctx context.Context, boardId uuid.UUID) (bool, error) {
+	var count int64
+	result := s.db.WithContext(ctx).Model(&model.Board{}).Where("id = ?", boardId).Count(&count)
+
+	if result.Error != nil {
+		return false, result.Error
+	}
+
+	return count > 0, nil // Return true if board exists
+}

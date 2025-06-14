@@ -55,7 +55,7 @@ func (app *application) createBoardHandler(w http.ResponseWriter, r *http.Reques
 
 	ctx := r.Context()
 
-	board, err := app.service.Boards.CreateBoard(ctx, &payload, uuid.New()) // Replace uuid.New() with the actual user ID from the context or session
+	board, err := app.service.Boards.CreateBoard(ctx, &payload, uuid.MustParse("558cf4e5-d324-4da7-a5eb-5836674ede97")) // Replace uuid.New() with the actual user ID from the context or session
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return
@@ -138,6 +138,37 @@ func (app *application) deleteBoardHandler(w http.ResponseWriter, r *http.Reques
 
 	w.WriteHeader(http.StatusOK)
 	if err := app.jsonResponse(w, http.StatusOK, "board deleted successfully"); err != nil {
+		app.internalServerError(w, r, err)
+	}
+}
+
+func (app *application) createBoardCommentHandler(w http.ResponseWriter, r *http.Request) {
+	board := getBoardFromContext(r)
+	if board == nil {
+		app.notFoundResponse(w, r, errors.ErrNotFound)
+		return
+	}
+
+	var payload dto.CommentPutRequest
+	if err := readJSON(w, r, &payload); err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	if err := app.validator.Struct(payload); err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	ctx := r.Context()
+
+	comment, err := app.service.Boards.AddComment(ctx, board.ID, uuid.MustParse("558cf4e5-d324-4da7-a5eb-5836674ede97"), &payload)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	if err := app.jsonResponse(w, http.StatusCreated, comment); err != nil {
 		app.internalServerError(w, r, err)
 	}
 }

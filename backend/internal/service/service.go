@@ -16,6 +16,7 @@ type Service struct {
 		GetById(context.Context, uuid.UUID) (*model.Board, error)
 		UpdateBoard(context.Context, *dto.BoardUpdateRequest, uuid.UUID) (*model.Board, error)
 		DeleteBoard(context.Context, uuid.UUID) error
+		AddComment(ctx context.Context, boardId uuid.UUID, userId uuid.UUID, request *dto.CommentPutRequest) (*model.BoardComment, error)
 	}
 	Users interface {
 		Create(context.Context, *model.User) error

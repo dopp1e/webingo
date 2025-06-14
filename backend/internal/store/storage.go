@@ -13,6 +13,11 @@ type BoardStoreInterface interface {
 	GetById(context.Context, uuid.UUID) (*model.Board, error)
 	Update(context.Context, *model.Board) error
 	Delete(context.Context, *model.Board) error
+	Exists(context.Context, uuid.UUID) (bool, error)
+}
+
+type BoardCommentStoreInterface interface {
+	Create(context.Context, *model.BoardComment) error
 }
 
 type UserStoreInterface interface {
@@ -29,7 +34,7 @@ type GameStoreInterface interface {
 	Create(context.Context, *model.Game) error
 }
 
-type RoleInterface interface {
+type RoleStoreInterface interface {
 	Create(context.Context, *model.Role) error
 	GetByName(context.Context, string) (*model.Role, error)
 	Exists(context.Context, string) (bool, error)
@@ -37,25 +42,28 @@ type RoleInterface interface {
 
 type StorageInterface interface {
 	Boards() BoardStoreInterface
+	BoardComments() BoardCommentStoreInterface
 	Users() UserStoreInterface
 	Spaces() SpaceStoreInterface
 	Games() GameStoreInterface
-	Roles() RoleInterface
+	Roles() RoleStoreInterface
 }
 
 type Storage struct {
-	boards BoardStoreInterface
-	users  UserStoreInterface
-	spaces SpaceStoreInterface
-	games  GameStoreInterface
-	roles  RoleInterface
+	boards        BoardStoreInterface
+	boardComments BoardCommentStoreInterface
+	users         UserStoreInterface
+	spaces        SpaceStoreInterface
+	games         GameStoreInterface
+	roles         RoleStoreInterface
 }
 
-func (s *Storage) Boards() BoardStoreInterface { return s.boards }
-func (s *Storage) Users() UserStoreInterface   { return s.users }
-func (s *Storage) Spaces() SpaceStoreInterface { return s.spaces }
-func (s *Storage) Games() GameStoreInterface   { return s.games }
-func (s *Storage) Roles() RoleInterface        { return s.roles }
+func (s *Storage) Boards() BoardStoreInterface               { return s.boards }
+func (s *Storage) BoardComments() BoardCommentStoreInterface { return s.boardComments }
+func (s *Storage) Users() UserStoreInterface                 { return s.users }
+func (s *Storage) Spaces() SpaceStoreInterface               { return s.spaces }
+func (s *Storage) Games() GameStoreInterface                 { return s.games }
+func (s *Storage) Roles() RoleStoreInterface                 { return s.roles }
 
 type TransactionalStorage interface {
 	StorageInterface
@@ -66,11 +74,12 @@ type TransactionalStorage interface {
 
 func NewStorage(db *gorm.DB) *Storage {
 	return &Storage{
-		boards: &BoardStore{db},
-		users:  &UserStore{db},
-		spaces: &SpaceStore{db},
-		games:  &GameStore{db},
-		roles:  &RoleStore{db},
+		boards:        &BoardStore{db},
+		boardComments: &BoardCommentStore{db},
+		users:         &UserStore{db},
+		spaces:        &SpaceStore{db},
+		games:         &GameStore{db},
+		roles:         &RoleStore{db},
 	}
 }
 
