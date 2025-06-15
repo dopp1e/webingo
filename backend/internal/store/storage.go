@@ -14,6 +14,7 @@ type BoardStoreInterface interface {
 	Update(context.Context, *model.Board) error
 	Delete(context.Context, *model.Board) error
 	Exists(context.Context, uuid.UUID) (bool, error)
+	GetByCreatorIDs(context.Context, []uuid.UUID) ([]model.Board, error)
 }
 
 type BoardCommentStoreInterface interface {
@@ -24,6 +25,8 @@ type UserStoreInterface interface {
 	Create(context.Context, *model.User) error
 	GetByUsername(context.Context, string) (*model.User, error)
 	Exists(context.Context, string) (bool, error)
+	GetByID(context.Context, uuid.UUID) (*model.User, error)
+	GetFollowedUserIDs(context.Context, uuid.UUID) ([]uuid.UUID, error)
 }
 
 type SpaceStoreInterface interface {
@@ -40,6 +43,13 @@ type RoleStoreInterface interface {
 	Exists(context.Context, string) (bool, error)
 }
 
+type FollowStoreInterface interface {
+	Create(context.Context, *model.Follow) error
+	GetFollowers(context.Context, uuid.UUID) ([]model.Follow, error)
+	GetFollowing(context.Context, uuid.UUID) ([]model.Follow, error)
+	Delete(context.Context, *model.Follow) error
+}
+
 type StorageInterface interface {
 	Boards() BoardStoreInterface
 	BoardComments() BoardCommentStoreInterface
@@ -47,6 +57,7 @@ type StorageInterface interface {
 	Spaces() SpaceStoreInterface
 	Games() GameStoreInterface
 	Roles() RoleStoreInterface
+	Follows() FollowStoreInterface
 }
 
 type Storage struct {
@@ -56,6 +67,7 @@ type Storage struct {
 	spaces        SpaceStoreInterface
 	games         GameStoreInterface
 	roles         RoleStoreInterface
+	follows       FollowStoreInterface
 }
 
 func (s *Storage) Boards() BoardStoreInterface               { return s.boards }
@@ -64,6 +76,7 @@ func (s *Storage) Users() UserStoreInterface                 { return s.users }
 func (s *Storage) Spaces() SpaceStoreInterface               { return s.spaces }
 func (s *Storage) Games() GameStoreInterface                 { return s.games }
 func (s *Storage) Roles() RoleStoreInterface                 { return s.roles }
+func (s *Storage) Follows() FollowStoreInterface             { return s.follows }
 
 type TransactionalStorage interface {
 	StorageInterface
@@ -80,6 +93,7 @@ func NewStorage(db *gorm.DB) *Storage {
 		spaces:        &SpaceStore{db},
 		games:         &GameStore{db},
 		roles:         &RoleStore{db},
+		follows:       &FollowStore{db},
 	}
 }
 

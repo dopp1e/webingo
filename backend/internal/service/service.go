@@ -23,11 +23,17 @@ type Service struct {
 		GetByUsername(context.Context, string) (*model.User, error)
 		Exists(context.Context, string) (bool, error)
 		CreateIfNotExists(context.Context, *model.User) (*model.User, error)
+		GetByID(context.Context, uuid.UUID) (*model.User, error)
+		FollowUser(ctx context.Context, followerID, followedID uuid.UUID) error
+		UnfollowUser(ctx context.Context, followerID, followedID uuid.UUID) error
 	}
 	Roles interface {
 		CreateRole(context.Context, *model.Role) error
 		GetRoleByName(context.Context, string) (*model.Role, error)
 		CreateRoleIfNotExists(context.Context, *model.Role) (*model.Role, error)
+	}
+	Feed interface {
+		GetFeed(ctx context.Context, userId uuid.UUID) ([]model.Board, error)
 	}
 }
 
@@ -41,6 +47,9 @@ func NewService(db *gorm.DB) *Service {
 			db: db,
 		},
 		Roles: &RoleService{
+			db: db,
+		},
+		Feed: &FeedService{
 			db: db,
 		},
 	}

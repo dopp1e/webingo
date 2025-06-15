@@ -48,6 +48,7 @@ func (app *application) mount() http.Handler {
 
 			r.Route("/{boardID}", func(r chi.Router) {
 				r.Use(app.boardContextMiddleware)
+
 				r.Get("/", app.getBoardHandler)
 				r.Put("/", app.putBoardHandler)
 				r.Delete("/", app.deleteBoardHandler)
@@ -55,6 +56,21 @@ func (app *application) mount() http.Handler {
 				r.Route("/comments", func(r chi.Router) {
 					r.Put("/", app.createBoardCommentHandler)
 				})
+			})
+		})
+
+		r.Route("/users", func(r chi.Router) {
+			r.Route("/{userID}", func(r chi.Router) {
+				r.Use(app.userContextMiddleware)
+
+				r.Get("/", app.getUserHandler)
+
+				r.Put("/follow", app.followUserHandler)
+				r.Put("/unfollow", app.unfollowUserHandler)
+			})
+
+			r.Group(func(r chi.Router) {
+				r.Get("/feed", app.getUserFeedHandler)
 			})
 		})
 	})

@@ -6,12 +6,15 @@ import (
 
 // context key strings
 type boardkey string
+type userkey string
 type contextModel struct {
 	Board boardkey
+	User  userkey
 }
 
 var Context = contextModel{
 	Board: "board",
+	User:  "user",
 }
 
 // Migrate performs the database migrations for the bingo application models.
@@ -32,6 +35,7 @@ func Migrate(db *gorm.DB) error {
 		&BoardCollection{},
 		&Notification{},
 		&Report{},
+		&Follow{},
 	)
 
 	if err != nil {

@@ -18,4 +18,11 @@ type User struct {
 	GameComments  []GameComment  `gorm:"foreignKey:UserID"`
 	BoardVotes    []BoardVote    `gorm:"foreignKey:UserID"`
 	GameVotes     []GameVote     `gorm:"foreignKey:UserID"`
+
+	BoardCollections []BoardCollection `gorm:"foreignKey:UserID"`
+	Notifications    []Notification    `gorm:"foreignKey:UserID"`
+	Reports          []Report          `gorm:"foreignKey:ReporterUserID"` // Reports made by this user
+
+	Following []User `gorm:"many2many:follows;joinForeignKey:FollowerID;joinReferences:FollowedUserID"`
+	Followers []User `gorm:"many2many:follows;joinForeignKey:FollowedUserID;joinReferences:FollowerID"`
 }
