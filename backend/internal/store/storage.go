@@ -14,11 +14,12 @@ type BoardStoreInterface interface {
 	Update(context.Context, *model.Board) error
 	Delete(context.Context, *model.Board) error
 	Exists(context.Context, uuid.UUID) (bool, error)
-	GetByCreatorIDs(context.Context, []uuid.UUID) ([]model.Board, error)
+	GetByCreatorIDs(ctx context.Context, creatorIDs []uuid.UUID, offset int, limit int, sort string) ([]model.Board, error)
 }
 
 type BoardCommentStoreInterface interface {
 	Create(context.Context, *model.BoardComment) error
+	GetByID(context.Context, uuid.UUID) (*model.BoardComment, error)
 }
 
 type UserStoreInterface interface {
@@ -35,6 +36,8 @@ type SpaceStoreInterface interface {
 
 type GameStoreInterface interface {
 	Create(context.Context, *model.Game) error
+	GetByID(context.Context, uuid.UUID) (*model.Game, error)
+	GetGameMarkedFieldCount(context.Context, uuid.UUID) (int, error)
 }
 
 type RoleStoreInterface interface {
@@ -50,6 +53,11 @@ type FollowStoreInterface interface {
 	Delete(context.Context, *model.Follow) error
 }
 
+type ActivityStoreInterface interface {
+	Create(context.Context, *model.Activity) error
+	GetPaginatedActivitiesByActors(ctx context.Context, actorIDs []uuid.UUID, offset int, limit int, sort string) ([]model.Activity, error)
+}
+
 type StorageInterface interface {
 	Boards() BoardStoreInterface
 	BoardComments() BoardCommentStoreInterface
@@ -58,6 +66,7 @@ type StorageInterface interface {
 	Games() GameStoreInterface
 	Roles() RoleStoreInterface
 	Follows() FollowStoreInterface
+	Activities() ActivityStoreInterface
 }
 
 type Storage struct {
@@ -68,6 +77,7 @@ type Storage struct {
 	games         GameStoreInterface
 	roles         RoleStoreInterface
 	follows       FollowStoreInterface
+	activity      ActivityStoreInterface
 }
 
 func (s *Storage) Boards() BoardStoreInterface               { return s.boards }
@@ -77,6 +87,7 @@ func (s *Storage) Spaces() SpaceStoreInterface               { return s.spaces }
 func (s *Storage) Games() GameStoreInterface                 { return s.games }
 func (s *Storage) Roles() RoleStoreInterface                 { return s.roles }
 func (s *Storage) Follows() FollowStoreInterface             { return s.follows }
+func (s *Storage) Activities() ActivityStoreInterface        { return s.activity }
 
 type TransactionalStorage interface {
 	StorageInterface
@@ -94,6 +105,7 @@ func NewStorage(db *gorm.DB) *Storage {
 		games:         &GameStore{db},
 		roles:         &RoleStore{db},
 		follows:       &FollowStore{db},
+		activity:      &ActivityStore{db},
 	}
 }
 

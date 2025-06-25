@@ -74,9 +74,15 @@ func (s *BoardStore) Exists(ctx context.Context, boardId uuid.UUID) (bool, error
 	return count > 0, nil // Return true if board exists
 }
 
-func (s *BoardStore) GetByCreatorIDs(ctx context.Context, creatorIDs []uuid.UUID) ([]model.Board, error) {
+func (s *BoardStore) GetByCreatorIDs(ctx context.Context, creatorIDs []uuid.UUID, offset int, limit int, sort string) ([]model.Board, error) {
 	var boards []model.Board
-	result := s.db.WithContext(ctx).Where("creator_id IN ?", creatorIDs).Find(&boards)
+	result := s.db.WithContext(ctx).
+		Preload("Spaces").
+		Where("creator_id IN ?", creatorIDs).
+		Offset(offset).
+		Limit(limit).
+		Order(sort).
+		Find(&boards)
 
 	if result.Error != nil {
 		return nil, result.Error

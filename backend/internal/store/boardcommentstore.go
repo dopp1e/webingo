@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/dopp1e/webingo/backend/internal/model"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -19,4 +20,15 @@ func (s *BoardCommentStore) Create(ctx context.Context, comment *model.BoardComm
 	}
 
 	return nil
+}
+
+func (s *BoardCommentStore) GetByID(ctx context.Context, id uuid.UUID) (*model.BoardComment, error) {
+	var comment model.BoardComment
+	result := s.db.WithContext(ctx).First(&comment, "id = ?", id)
+
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return &comment, nil
 }

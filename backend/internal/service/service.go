@@ -33,7 +33,7 @@ type Service struct {
 		CreateRoleIfNotExists(context.Context, *model.Role) (*model.Role, error)
 	}
 	Feed interface {
-		GetFeed(ctx context.Context, userId uuid.UUID) ([]model.Board, error)
+		GetFeed(ctx context.Context, userId uuid.UUID, fq model.PaginatedFeedQuery) ([]dto.FeedItem, error)
 	}
 }
 
