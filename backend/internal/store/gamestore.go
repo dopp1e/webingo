@@ -35,7 +35,28 @@ func (s *GameStore) GetByID(ctx context.Context, id uuid.UUID) (*model.Game, err
 	return &game, nil
 }
 
-func (s *GameStore) GetGameMarkedFieldCount(ctx context.Context, gameID uuid.UUID) (int, error) {
+func fillBoard(board [][]bool, moves []model.PlayerMove, height int, width int) (int, int) {
+	moveCount := 0
+	bingoCount := 0
+	for _, move := range moves {
+		okHeight := move.CellH >= 0 && move.CellH < height
+		okWidth := move.CellW >= 0 && move.CellW < width
+		if !okHeight || !okWidth {
+			continue // Skip invalid moves
+		}
+
+		board[move.CellH][move.CellW] = !board[move.CellH][move.CellW] // Toggle the marked state
+		if board[move.CellH][move.CellW] {
+			moveCount++ // Increment count if the field is marked
+		} else {
+			moveCount-- // Decrement count if the field is unmarked
+		}
+	}
+
+	return moveCount, bingoCount
+}
+
+func (s *GameStore) GetGameMarkedFieldAndBingoCount(ctx context.Context, gameID uuid.UUID) (int, int, error) {
 	var moves []model.PlayerMove
 	result := s.db.WithContext(ctx).
 		Model(&model.PlayerMove{}).
@@ -43,33 +64,19 @@ func (s *GameStore) GetGameMarkedFieldCount(ctx context.Context, gameID uuid.UUI
 		Find(&moves)
 
 	if result.Error != nil {
-		return 0, result.Error
+		return 0, 0, result.Error
 	}
 
 	game, err := s.GetByID(ctx, gameID)
 	if err != nil || game == nil {
-		return 0, err
+		return 0, 0, err
 	}
 
-	count := int(0)
 	var markedFields [][]bool = make([][]bool, game.Height)
 	for i := range markedFields {
 		markedFields[i] = make([]bool, game.Width)
 	}
-	for _, move := range moves {
-		okHeight := move.CellH >= 0 && move.CellH < game.Height
-		okWidth := move.CellW >= 0 && move.CellW < game.Width
-		if !okHeight || !okWidth {
-			continue // Skip invalid moves
-		}
+	moveCount, bingoCount := fillBoard(markedFields, moves, game.Height, game.Width)
 
-		markedFields[move.CellH][move.CellW] = !markedFields[move.CellH][move.CellW] // Toggle the marked state
-		if markedFields[move.CellH][move.CellW] {
-			count++ // Increment count if the field is marked
-		} else {
-			count-- // Decrement count if the field is unmarked
-		}
-	}
-
-	return count, nil
+	return moveCount, bingoCount, nil
 }

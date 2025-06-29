@@ -37,7 +37,7 @@ type SpaceStoreInterface interface {
 type GameStoreInterface interface {
 	Create(context.Context, *model.Game) error
 	GetByID(context.Context, uuid.UUID) (*model.Game, error)
-	GetGameMarkedFieldCount(context.Context, uuid.UUID) (int, error)
+	GetGameMarkedFieldAndBingoCount(ctx context.Context, gameID uuid.UUID) (int, int, error)
 }
 
 type RoleStoreInterface interface {
@@ -55,7 +55,7 @@ type FollowStoreInterface interface {
 
 type ActivityStoreInterface interface {
 	Create(context.Context, *model.Activity) error
-	GetPaginatedActivitiesByActors(ctx context.Context, actorIDs []uuid.UUID, offset int, limit int, sort string) ([]model.Activity, error)
+	GetPaginatedActivitiesByActors(ctx context.Context, actorIDs []uuid.UUID, fq model.PaginatedFeedQuery) ([]model.Activity, error)
 }
 
 type StorageInterface interface {

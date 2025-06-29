@@ -1,0 +1,832 @@
+basePath: /v1
+definitions:
+  dto.FeedItem:
+    properties:
+      actor:
+        $ref: '#/definitions/dto.FeedUserData'
+      contextId:
+        type: string
+      contextType:
+        $ref: '#/definitions/model.ActivityTargetType'
+      createdAt:
+        type: string
+      id:
+        type: string
+      target:
+        description: |-
+          This field will hold the actual hydrated entity (Board, Game, Comment etc.)
+          Use an interface{} and rely on JSON marshalling to handle different types.
+      targetId:
+        type: string
+      targetType:
+        $ref: '#/definitions/model.ActivityTargetType'
+      verb:
+        $ref: '#/definitions/model.ActivityVerb'
+    type: object
+  dto.FeedUserData:
+    properties:
+      id:
+        type: string
+      username:
+        type: string
+    type: object
+  model.ActivityTargetType:
+    enum:
+    - board
+    - game
+    - comment
+    type: string
+    x-enum-varnames:
+    - ActivityTargetTypeBoard
+    - ActivityTargetTypeGame
+    - ActivityTargetTypeComment
+  model.ActivityVerb:
+    enum:
+    - created_board
+    - created_game
+    - commented_on_board
+    - commented_on_game
+    - voted_on_board
+    - voted_on_game
+    type: string
+    x-enum-varnames:
+    - ActivityVerbCreatedBoard
+    - ActivityVerbCreatedGame
+    - ActivityVerbCommentedOnBoard
+    - ActivityVerbCommentedOnGame
+    - ActivityVerbVotedOnBoard
+    - ActivityVerbVotedOnGame
+  model.Board:
+    properties:
+      comments:
+        items:
+          $ref: '#/definitions/model.BoardComment'
+        type: array
+      createdAt:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      spaces:
+        description: GORM tag, no json tag if Space has Board reference
+        items:
+          $ref: '#/definitions/model.Space'
+        type: array
+      tags:
+        description: Tags for the board
+        items:
+          type: string
+        type: array
+      updatedAt:
+        type: string
+      userId:
+        type: string
+      version:
+        description: For optimistic locking
+        type: integer
+      votes:
+        items:
+          $ref: '#/definitions/model.BoardVote'
+        type: array
+    type: object
+  model.BoardCollection:
+    properties:
+      boards:
+        description: Many-to-many relationship with Boards
+        items:
+          $ref: '#/definitions/model.Board'
+        type: array
+      createdAt:
+        type: string
+      description:
+        description: Optional description
+        type: string
+      id:
+        type: string
+      isPublic:
+        description: Can others view this collection?
+        type: boolean
+      name:
+        description: Name of the collection (e.g., "My Party Boards")
+        type: string
+      type:
+        allOf:
+        - $ref: '#/definitions/model.BoardCollectionType'
+        description: e.g., "FAVORITES", "USER_CREATED"
+      updatedAt:
+        type: string
+      userId:
+        description: User who owns the collection
+        type: string
+    type: object
+  model.BoardCollectionType:
+    enum:
+    - FAVORITES
+    - USER_CREATED
+    type: string
+    x-enum-varnames:
+    - BoardCollectionTypeFavorites
+    - BoardCollectionTypeUserCreated
+  model.BoardComment:
+    properties:
+      boardId:
+        type: string
+      content:
+        description: Content of the comment
+        type: string
+      createdAt:
+        type: string
+      id:
+        type: string
+      updatedAt:
+        type: string
+      userId:
+        type: string
+    type: object
+  model.BoardVote:
+    properties:
+      board:
+        $ref: '#/definitions/model.Board'
+      boardId:
+        type: string
+      createdAt:
+        type: string
+      id:
+        type: string
+      isUpvote:
+        type: boolean
+      updatedAt:
+        type: string
+      user:
+        $ref: '#/definitions/model.User'
+      userId:
+        type: string
+    type: object
+  model.Cell:
+    properties:
+      createdAt:
+        type: string
+      gameId:
+        type: string
+      id:
+        type: string
+      posH:
+        type: integer
+      posW:
+        type: integer
+      spaceId:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  model.Game:
+    properties:
+      board:
+        $ref: '#/definitions/model.Board'
+      boardId:
+        type: string
+      cells:
+        items:
+          $ref: '#/definitions/model.Cell'
+        type: array
+      comments:
+        items:
+          $ref: '#/definitions/model.GameComment'
+        type: array
+      createdAt:
+        type: string
+      finished:
+        type: boolean
+      height:
+        type: integer
+      id:
+        type: string
+      playerMoves:
+        items:
+          $ref: '#/definitions/model.PlayerMove'
+        type: array
+      private:
+        type: boolean
+      updatedAt:
+        type: string
+      user:
+        $ref: '#/definitions/model.User'
+      userId:
+        description: User who created the game, optional for anonymous games
+        type: string
+      votes:
+        items:
+          $ref: '#/definitions/model.GameVote'
+        type: array
+      width:
+        type: integer
+      youtubeVideoId:
+        type: string
+    type: object
+  model.GameComment:
+    properties:
+      content:
+        description: Content of the comment
+        type: string
+      createdAt:
+        type: string
+      gameId:
+        type: string
+      id:
+        type: string
+      updatedAt:
+        type: string
+      userId:
+        type: string
+    type: object
+  model.GameVote:
+    properties:
+      createdAt:
+        type: string
+      game:
+        $ref: '#/definitions/model.Game'
+      gameId:
+        type: string
+      id:
+        type: string
+      isUpvote:
+        type: boolean
+      updatedAt:
+        type: string
+      user:
+        $ref: '#/definitions/model.User'
+      userId:
+        type: string
+    type: object
+  model.Notification:
+    properties:
+      acknowledgedAt:
+        description: When the user dismissed/acted on it
+        type: string
+      createdAt:
+        type: string
+      id:
+        type: string
+      isRead:
+        description: Has the user read it?
+        type: boolean
+      link:
+        description: Optional URL to navigate to
+        type: string
+      message:
+        description: Display message
+        type: string
+      relatedEntityId:
+        description: Optional ID of related entity (e.g., BoardID, CommentID)
+        type: string
+      relatedEntityType:
+        description: Optional type of related entity (e.g., "Board", "Comment")
+        type: string
+      type:
+        allOf:
+        - $ref: '#/definitions/model.NotificationType'
+        description: Type of notification
+      updatedAt:
+        type: string
+      user:
+        $ref: '#/definitions/model.User'
+      userId:
+        description: User to whom the notification belongs
+        type: string
+    type: object
+  model.NotificationType:
+    enum:
+    - COMMENT
+    - FOLLOW
+    - VOTE
+    - SYSTEM
+    - UPDATE
+    type: string
+    x-enum-comments:
+      NotificationTypeUpdate: e.g., board you favorited updated
+    x-enum-varnames:
+    - NotificationTypeComment
+    - NotificationTypeFollow
+    - NotificationTypeVote
+    - NotificationTypeSystem
+    - NotificationTypeUpdate
+  model.PlayerMove:
+    properties:
+      cellH:
+        type: integer
+      cellW:
+        type: integer
+      createdAt:
+        type: string
+      game:
+        $ref: '#/definitions/model.Game'
+      gameId:
+        type: string
+      id:
+        type: string
+      timestamp:
+        type: integer
+      updatedAt:
+        type: string
+    type: object
+  model.Report:
+    properties:
+      createdAt:
+        type: string
+      description:
+        description: Optional detailed description
+        type: string
+      id:
+        type: string
+      isResolved:
+        description: Has the report been actioned by moderation?
+        type: boolean
+      moderatorUser:
+        $ref: '#/definitions/model.User'
+      moderatorUserId:
+        description: ID of the moderator who handled it
+        type: string
+      reason:
+        allOf:
+        - $ref: '#/definitions/model.ReportReason'
+        description: Reason for the report
+      reportedEntityId:
+        description: ID of the entity being reported
+        type: string
+      reportedEntityType:
+        allOf:
+        - $ref: '#/definitions/model.ReportedEntityType'
+        description: Type of the entity (e.g., "BOARD", "COMMENT", "USER")
+      reporterUser:
+        $ref: '#/definitions/model.User'
+      reporterUserId:
+        description: User who submitted the report
+        type: string
+      resolutionNotes:
+        description: Notes from the moderator
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  model.ReportReason:
+    enum:
+    - SPAM
+    - HARASSMENT
+    - NUDITY
+    - HATE_SPEECH
+    - OTHER
+    type: string
+    x-enum-varnames:
+    - ReportReasonSpam
+    - ReportReasonHarassment
+    - ReportReasonNudity
+    - ReportReasonHateSpeech
+    - ReportReasonOther
+  model.ReportedEntityType:
+    enum:
+    - BOARD
+    - COMMENT
+    - USER
+    - GAME
+    type: string
+    x-enum-comments:
+      ReportedEntityTypeComment: For both BoardComment and GameComment
+    x-enum-varnames:
+    - ReportedEntityTypeBoard
+    - ReportedEntityTypeComment
+    - ReportedEntityTypeUser
+    - ReportedEntityTypeGame
+  model.Role:
+    properties:
+      createdAt:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      level:
+        type: integer
+      name:
+        type: string
+      updatedAt:
+        type: string
+      users:
+        items:
+          $ref: '#/definitions/model.User'
+        type: array
+    type: object
+  model.Space:
+    properties:
+      content:
+        type: string
+      createdAt:
+        type: string
+      id:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  model.User:
+    properties:
+      boardCollections:
+        items:
+          $ref: '#/definitions/model.BoardCollection'
+        type: array
+      boardComments:
+        items:
+          $ref: '#/definitions/model.BoardComment'
+        type: array
+      boardVotes:
+        items:
+          $ref: '#/definitions/model.BoardVote'
+        type: array
+      boards:
+        items:
+          $ref: '#/definitions/model.Board'
+        type: array
+      createdAt:
+        type: string
+      email:
+        type: string
+      followers:
+        items:
+          $ref: '#/definitions/model.User'
+        type: array
+      following:
+        items:
+          $ref: '#/definitions/model.User'
+        type: array
+      gameComments:
+        items:
+          $ref: '#/definitions/model.GameComment'
+        type: array
+      gameVotes:
+        items:
+          $ref: '#/definitions/model.GameVote'
+        type: array
+      games:
+        items:
+          $ref: '#/definitions/model.Game'
+        type: array
+      id:
+        type: string
+      isActive:
+        type: boolean
+      notifications:
+        items:
+          $ref: '#/definitions/model.Notification'
+        type: array
+      reports:
+        description: Reports made by this user
+        items:
+          $ref: '#/definitions/model.Report'
+        type: array
+      role:
+        $ref: '#/definitions/model.Role'
+      roleId:
+        type: string
+      updatedAt:
+        type: string
+      username:
+        type: string
+    type: object
+info:
+  contact: {}
+  description: API for Webingo, a bingo game application.
+  license:
+    name: GPL-3.0
+    url: https://www.gnu.org/licenses/gpl-3.0.en.html
+  title: Webingo API
+paths:
+  /boards:
+    put:
+      consumes:
+      - application/json
+      description: Creates a new board with the provided details
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/model.Board'
+        "400":
+          description: Invalid request payload
+          schema: {}
+        "500":
+          description: Internal server error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Create a new board
+      tags:
+      - boards
+  /boards/{boardID}:
+    delete:
+      description: Deletes a board by its ID
+      parameters:
+      - description: Board ID
+        in: path
+        name: boardID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Board deleted successfully
+          schema:
+            type: string
+        "400":
+          description: Invalid board ID
+          schema: {}
+        "404":
+          description: Board not found
+          schema: {}
+        "500":
+          description: Internal server error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a board
+      tags:
+      - boards
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a board by its ID
+      parameters:
+      - description: Board ID
+        in: path
+        name: boardID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Board'
+        "400":
+          description: Invalid board ID
+          schema: {}
+        "404":
+          description: Board not found
+          schema: {}
+        "500":
+          description: Internal server error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Get a board by ID
+      tags:
+      - boards
+    put:
+      consumes:
+      - application/json
+      description: Updates an existing board with the provided details
+      parameters:
+      - description: Board ID
+        in: path
+        name: boardID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Board'
+        "400":
+          description: Invalid request payload
+          schema: {}
+        "404":
+          description: Board not found
+          schema: {}
+        "409":
+          description: Data version mismatch
+          schema: {}
+        "500":
+          description: Internal server error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Update a board
+      tags:
+      - boards
+  /boards/{boardID}/comments:
+    put:
+      consumes:
+      - application/json
+      description: Creates a new comment on the specified board
+      parameters:
+      - description: Board ID
+        in: path
+        name: boardID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/model.BoardComment'
+        "400":
+          description: Invalid request payload
+          schema: {}
+        "404":
+          description: Board not found
+          schema: {}
+        "500":
+          description: Internal server error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Create a comment on a board
+      tags:
+      - boards
+  /feed:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves the feed for the authenticated user
+      parameters:
+      - description: Number of items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Offset for pagination
+        in: query
+        name: offset
+        type: integer
+      - description: Sort order (asc/desc)
+        in: query
+        name: sort
+        type: string
+      - description: Comma-separated list of tags
+        in: query
+        name: tags
+        type: string
+      - description: Filter items created since this time
+        format: date-time
+        in: query
+        name: since
+        type: string
+      - description: Filter items created until this time
+        format: date-time
+        in: query
+        name: until
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.FeedItem'
+            type: array
+        "400":
+          description: Bad Request
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Get user feed
+      tags:
+      - feed
+  /health:
+    get:
+      description: Checks the health of the API service
+      parameters:
+      - description: User ID
+        format: uuid
+        in: path
+        name: userID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ok
+          schema:
+            type: string
+      summary: Healthcheck
+      tags:
+      - ops
+  /users/{userID}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves the user profile based on the user ID
+      parameters:
+      - description: User ID
+        format: uuid
+        in: path
+        name: userID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.User'
+        "400":
+          description: Bad Request
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Fetches a user profile
+      tags:
+      - users
+  /users/{userID}/follow:
+    post:
+      consumes:
+      - application/json
+      description: Follows a user by their ID
+      parameters:
+      - description: User ID
+        format: uuid
+        in: path
+        name: userID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Followed successfully
+        "400":
+          description: User payload missing or invalid
+          schema: {}
+        "404":
+          description: User not found
+          schema: {}
+        "409":
+          description: Already following this user
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Follow a user
+      tags:
+      - users
+  /users/{userID}/unfollow:
+    post:
+      consumes:
+      - application/json
+      description: Unfollows a user by their ID
+      parameters:
+      - description: User ID
+        format: uuid
+        in: path
+        name: userID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Unfollowed successfully
+        "400":
+          description: User payload missing or invalid
+          schema: {}
+        "404":
+          description: User not found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Unfollow a user
+      tags:
+      - users
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

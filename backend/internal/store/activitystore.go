@@ -20,14 +20,26 @@ func (s *ActivityStore) Create(ctx context.Context, activity *model.Activity) er
 	return nil
 }
 
-func (s *ActivityStore) GetPaginatedActivitiesByActors(ctx context.Context, actorIDs []uuid.UUID, offset int, limit int, sort string) ([]model.Activity, error) {
+func (s *ActivityStore) GetPaginatedActivitiesByActors(ctx context.Context, actorIDs []uuid.UUID, fq model.PaginatedFeedQuery) ([]model.Activity, error) {
 	var activities []model.Activity
-	query := s.db.WithContext(ctx).Where("actor_id IN ?", actorIDs).Preload("Actor").Offset(offset).Limit(limit)
+	query := s.db.WithContext(ctx).
+		Where("actor_id IN ?", actorIDs).
+		Preload("Actor").
+		Offset(fq.Offset).
+		Limit(fq.Limit)
+
+	if fq.Since != "" {
+		query = query.Where("updated_at > ?", fq.Since)
+	}
+
+	if fq.Until != "" {
+		query = query.Where("updated_at < ?", fq.Until)
+	}
 
 	order := "created_at desc"
-	if sort == "asc" {
+	if fq.Sort == "asc" {
 		order = "created_at asc"
-	} else if sort != "desc" {
+	} else if fq.Sort != "desc" {
 		return nil, gorm.ErrInvalidField
 	}
 	query = query.Order(order)

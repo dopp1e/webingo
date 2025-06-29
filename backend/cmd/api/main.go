@@ -2,18 +2,30 @@ package main
 
 import (
 	"context"
-	"log"
 
 	"github.com/dopp1e/webingo/backend/internal/env"
 	"github.com/dopp1e/webingo/backend/internal/model"
 	"github.com/dopp1e/webingo/backend/internal/service"
 	"github.com/go-playground/validator/v10"
+	"go.uber.org/zap"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 const version = "0.0.1"
 
+//	@title			Webingo API
+//	@description	API for Webingo, a bingo game application.
+
+//	@license.name	GPL-3.0
+//	@license.url	https://www.gnu.org/licenses/gpl-3.0.en.html
+
+//	@BasePath	/v1
+
+// @securityDefinitions.apiKey	ApiKeyAuth
+// @in							header
+// @name						Authorization
+// @description
 func main() {
 	db_host := env.GetString("DB_HOST", "localhost")
 	db_user := env.GetString("DB_USER", "admin")
@@ -26,7 +38,8 @@ func main() {
 	admin_username := env.GetString("ADMIN_USERNAME", "admin")
 	admin_password := env.GetString("ADMIN_PASSWORD", "adminpassword")
 	cfg := config{
-		dsn: env.GetString("ADDR", ":8080"),
+		dsn:    env.GetString("ADDR", ":8080"),
+		apiUrl: env.GetString("EXTERNAL_URL", "localhost:8080"),
 		db: dbConfig{
 			dsn:          dsn,
 			maxOpenConns: env.GetInt("DB_MAX_OPEN_CONNS", 30),
@@ -36,18 +49,24 @@ func main() {
 		env: env.GetString("ENV", "dev"),
 	}
 
+	// Logger
+
+	logger := zap.Must(zap.NewProduction()).Sugar()
+	defer logger.Sync() // flushes buffer, if any
+
+	// Database connection
 	db, err := gorm.Open(postgres.Open(cfg.db.dsn), &gorm.Config{
 		//DisableForeignKeyConstraintWhenMigrating: true,
 	})
 	if err != nil {
-		log.Panic(err)
+		logger.Fatal(err)
 	}
 
 	if err := model.Migrate(db); err != nil {
-		log.Panic(err)
+		logger.Fatal(err)
 	}
 
-	log.Println("db connect")
+	logger.Info("Successfully connected to the database.")
 
 	service := service.NewService(db)
 
@@ -59,7 +78,7 @@ func main() {
 
 	adminRole, err = service.Roles.CreateRoleIfNotExists(context.Background(), adminRole)
 	if err != nil {
-		log.Panicf("failed to create admin role: %v", err)
+		logger.Fatal("failed to create admin role: %v", err)
 	}
 	adminUser := &model.User{
 		Username: admin_username,
@@ -70,9 +89,9 @@ func main() {
 	}
 	adminUser, err = service.Users.CreateIfNotExists(context.Background(), adminUser)
 	if err != nil {
-		log.Panicf("failed to create admin user: %v", err)
+		logger.Fatal("failed to create admin user: %v", err)
 	}
-	log.Printf("admin user available: %s with role %s", adminUser.Username, adminRole.Name)
+	logger.Info("admin user available: %s with role %s", adminUser.Username, adminRole.Name)
 
 	validate := validator.New(validator.WithRequiredStructEnabled())
 
@@ -80,8 +99,9 @@ func main() {
 		config:    cfg,
 		service:   *service,
 		validator: *validate,
+		logger:    logger,
 	}
 
 	mux := app.mount()
-	log.Fatal(app.run(mux))
+	logger.Fatal(app.run(mux))
 }

@@ -26,7 +26,7 @@ func (s *FeedService) GetFeed(ctx context.Context, userId uuid.UUID, fq model.Pa
 		return nil, err
 	}
 
-	activities, err := tx.Activities().GetPaginatedActivitiesByActors(ctx, followedUsers, fq.Offset, fq.Limit, fq.Sort)
+	activities, err := tx.Activities().GetPaginatedActivitiesByActors(ctx, followedUsers, fq)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +73,7 @@ func (s *FeedService) GetFeed(ctx context.Context, userId uuid.UUID, fq model.Pa
 			if gameErr != nil {
 				continue
 			}
-			markedFieldsCount, markedFieldsErr := tx.Games().GetGameMarkedFieldCount(ctx, game.ID)
+			markedFieldsCount, bingoCount, markedFieldsErr := tx.Games().GetGameMarkedFieldAndBingoCount(ctx, game.ID)
 			if markedFieldsErr != nil {
 				continue
 			}
@@ -83,6 +83,7 @@ func (s *FeedService) GetFeed(ctx context.Context, userId uuid.UUID, fq model.Pa
 				Height:       game.Height,
 				Width:        game.Width,
 				MarkedFields: markedFieldsCount,
+				BingoCount:   bingoCount,
 			}
 		}
 

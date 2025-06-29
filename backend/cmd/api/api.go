@@ -1,26 +1,31 @@
 package main
 
 import (
-	"log"
+	"fmt"
 	"net/http"
 	"time"
 
+	"github.com/dopp1e/webingo/backend/docs"
 	"github.com/dopp1e/webingo/backend/internal/service"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-playground/validator/v10"
+	httpSwagger "github.com/swaggo/http-swagger/v2"
+	"go.uber.org/zap"
 )
 
 type application struct {
 	config    config
 	service   service.Service
 	validator validator.Validate
+	logger    *zap.SugaredLogger
 }
 
 type config struct {
-	dsn string
-	db  dbConfig
-	env string
+	dsn    string
+	db     dbConfig
+	env    string
+	apiUrl string
 }
 
 type dbConfig struct {
@@ -42,6 +47,9 @@ func (app *application) mount() http.Handler {
 
 	r.Route("/v1", func(r chi.Router) {
 		r.Get("/health", app.healthCheckHandler)
+
+		docsURL := fmt.Sprintf("%s/swagger/doc.json", app.config.dsn)
+		r.Get("/swagger/*", httpSwagger.Handler(httpSwagger.URL(docsURL)))
 
 		r.Route("/boards", func(r chi.Router) {
 			r.Put("/", app.createBoardHandler)
@@ -79,6 +87,11 @@ func (app *application) mount() http.Handler {
 }
 
 func (app *application) run(mux http.Handler) error {
+	//
+	docs.SwaggerInfo.Version = version
+	docs.SwaggerInfo.Host = app.config.apiUrl
+	docs.SwaggerInfo.BasePath = "/v1"
+
 	srv := http.Server{
 		Addr:         app.config.dsn,
 		Handler:      mux,
@@ -87,7 +100,7 @@ func (app *application) run(mux http.Handler) error {
 		IdleTimeout:  time.Minute,
 	}
 
-	log.Printf("Server has started at %s", app.config.dsn)
+	app.logger.Infow("Server has started", "addr", app.config.dsn, "env", app.config.env)
 
 	return srv.ListenAndServe()
 }

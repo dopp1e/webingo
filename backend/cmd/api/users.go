@@ -10,6 +10,23 @@ import (
 	"github.com/google/uuid"
 )
 
+// getUserHandler godoc
+//
+//	@Summary		Fetches a user profile
+//	@Description	Retrieves the user profile based on the user ID
+//	@Tags			users
+//	@Accept			json
+//
+//	@Produce		json
+//
+//	@Param			userID	path		string	true	"User ID"	Format(uuid)
+//	@Success		200		{object}	model.User
+//	@Failure		400		{object}	error
+//	@Failure		404		{object}	error
+//	@Failure		500		{object}	error
+//
+//	@Security		ApiKeyAuth
+//	@Router			/users/{userID} [get]
 func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := app.getUserFromContext(r.Context())
 	if err != nil {
@@ -28,6 +45,24 @@ func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// FollowUser godoc
+//
+//	@Summary		Follow a user
+//	@Description	Follows a user by their ID
+//	@Tags			users
+//	@Accept			json
+//
+//	@Produce		json
+//	@Param			userID	path	string	true	"User ID"	Format(uuid)
+//
+//	@Success		204		"Followed successfully"
+//
+//	@Failure		400		{object}	error "User payload missing or invalid"
+//	@Failure		404		{object}	error "User not found"
+//	@Failure		409		{object}	error "Already following this user"
+//	@Failure		500		{object}	error
+//	@Security		ApiKeyAuth
+//	@Router			/users/{userID}/follow [post]
 func (app *application) followUserHandler(w http.ResponseWriter, r *http.Request) {
 	followedUser, err := app.getUserFromContext(r.Context())
 	if err != nil {
@@ -56,6 +91,21 @@ func (app *application) followUserHandler(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// UnfollowUser godoc
+//
+//	@Summary		Unfollow a user
+//	@Description	Unfollows a user by their ID
+//	@Tags			users
+//	@Accept			json
+//
+//	@Produce		json
+//	@Param			userID	path	string	true	"User ID"	Format(uuid)
+//	@Success		204		"Unfollowed successfully"
+//	@Failure		400		{object}	error "User payload missing or invalid"
+//	@Failure		404		{object}	error "User not found"
+//	@Failure		500		{object}	error
+//	@Security		ApiKeyAuth
+//	@Router			/users/{userID}/unfollow [post]
 func (app *application) unfollowUserHandler(w http.ResponseWriter, r *http.Request) {
 	followedUser, err := app.getUserFromContext(r.Context())
 	if err != nil {

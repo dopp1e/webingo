@@ -7,6 +7,28 @@ import (
 	"github.com/dopp1e/webingo/backend/internal/model"
 )
 
+// getUserFeedHandler godoc
+//
+//	@Summary		Get user feed
+//	@Description	Retrieves the feed for the authenticated user
+//	@Tags			feed
+//	@Accept			json
+//
+//	@Produce		json
+//	@Param			limit	query		int		false	"Number of items per page"
+//	@Param			offset	query		int		false	"Offset for pagination"
+//	@Param			sort	query		string	false	"Sort order (asc/desc)"
+//	@Param			tags	query		string	false	"Comma-separated list of tags"
+//	@Param			since	query		string	false	"Filter items created since this time" Format(date-time)
+//	@Param			until	query		string	false	"Filter items created until this time" Format(date-time)
+//
+//	@Success		200		{object}	[]dto.FeedItem
+//	@Failure		400		{object}	error
+//	@Failure		404		{object}	error
+//	@Failure		500		{object}	error
+//
+//	@Security		ApiKeyAuth
+//	@Router			/feed [get]
 func (app *application) getUserFeedHandler(w http.ResponseWriter, r *http.Request) {
 	fq := model.PaginatedFeedQuery{
 		Limit:  20,

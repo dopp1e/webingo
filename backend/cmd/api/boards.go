@@ -40,6 +40,19 @@ func (app *application) boardContextMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// createBoardHandler godoc
+//
+//	@Summary		Create a new board
+//	@Description	Creates a new board with the provided details
+//	@Tags			boards
+//	@Accept			json
+//	@Produce		json
+//
+//	@Success		201	{object}	model.Board
+//	@Failure		400	{object}	error	"Invalid request payload"
+//	@Failure		500	{object}	error	"Internal server error"
+//	@Security		ApiKeyAuth
+//	@Router			/boards [put]
 func (app *application) createBoardHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO: add verification of user making rqeust
 	var payload dto.BoardCreateRequest
@@ -66,6 +79,21 @@ func (app *application) createBoardHandler(w http.ResponseWriter, r *http.Reques
 	}
 }
 
+// getBoardHandler godoc
+//
+//	@Summary		Get a board by ID
+//	@Description	Retrieves a board by its ID
+//	@Tags			boards
+//	@Accept			json
+//	@Produce		json
+//	@Param			boardID	path		string	true	"Board ID"	Format(uuid
+//
+//	@Success		200		{object}	model.Board
+//	@Failure		400		{object}	error	"Invalid board ID"
+//	@Failure		404		{object}	error	"Board not found"
+//	@Failure		500		{object}	error	"Internal server error"
+//	@Security		ApiKeyAuth
+//	@Router			/boards/{boardID} [get]
 func (app *application) getBoardHandler(w http.ResponseWriter, r *http.Request) {
 	board := getBoardFromContext(r)
 
@@ -79,6 +107,22 @@ func (app *application) getBoardHandler(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
+// putBoardHandler godoc
+//
+//	@Summary		Update a board
+//	@Description	Updates an existing board with the provided details
+//	@Tags			boards
+//	@Accept			json
+//	@Produce		json
+//	@Param			boardID	path		string	true	"Board ID"	Format(uuid
+//
+// @Success		200		{object}	model.Board
+// @Failure		400		{object}	error	"Invalid request payload"
+// @Failure		404		{object}	error	"Board not found"
+// @Failure		409		{object}	error	"Data version mismatch"
+// @Failure		500		{object}	error	"Internal server error"
+// @Security		ApiKeyAuth
+// @Router			/boards/{boardID} [put]
 func (app *application) putBoardHandler(w http.ResponseWriter, r *http.Request) {
 	board := getBoardFromContext(r)
 	if board == nil {
@@ -117,6 +161,22 @@ func (app *application) putBoardHandler(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
+// deleteBoardHandler godoc
+//
+//	@Summary		Delete a board
+//	@Description	Deletes a board by its ID
+//	@Tags			boards
+//
+// @Produce		json
+//
+//	@Param			boardID	path		string	true	"Board ID"	Format(uuid
+//
+//	@Success		200		{object}	string "Board deleted successfully"
+//	@Failure		400		{object}	error	"Invalid board ID"
+//	@Failure		404		{object}	error	"Board not found"
+//	@Failure		500		{object}	error	"Internal server error"
+//	@Security		ApiKeyAuth
+//	@Router			/boards/{boardID} [delete]
 func (app *application) deleteBoardHandler(w http.ResponseWriter, r *http.Request) {
 	boardID, err := uuid.Parse(chi.URLParam(r, "boardID"))
 
@@ -142,6 +202,21 @@ func (app *application) deleteBoardHandler(w http.ResponseWriter, r *http.Reques
 	}
 }
 
+// createBoardCommentHandler godoc
+//
+//	@Summary		Create a comment on a board
+//	@Description	Creates a new comment on the specified board
+//	@Tags			boards
+//	@Accept			json
+//	@Produce		json
+//	@Param			boardID	path		string	true	"Board ID"	Format(uuid
+//
+// @Success		201		{object}	model.BoardComment
+// @Failure		400		{object}	error	"Invalid request payload"
+// @Failure		404		{object}	error	"Board not found"
+// @Failure		500		{object}	error	"Internal server error"
+// @Security		ApiKeyAuth
+// @Router			/boards/{boardID}/comments [put]
 func (app *application) createBoardCommentHandler(w http.ResponseWriter, r *http.Request) {
 	board := getBoardFromContext(r)
 	if board == nil {
