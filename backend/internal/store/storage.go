@@ -58,6 +58,10 @@ type ActivityStoreInterface interface {
 	GetPaginatedActivitiesByActors(ctx context.Context, actorIDs []uuid.UUID, fq model.PaginatedFeedQuery) ([]model.Activity, error)
 }
 
+type InvitationStoreInterface interface {
+	Create(context.Context, *model.Invitation) error
+}
+
 type StorageInterface interface {
 	Boards() BoardStoreInterface
 	BoardComments() BoardCommentStoreInterface
@@ -67,6 +71,7 @@ type StorageInterface interface {
 	Roles() RoleStoreInterface
 	Follows() FollowStoreInterface
 	Activities() ActivityStoreInterface
+	Invitations() InvitationStoreInterface
 }
 
 type Storage struct {
@@ -78,6 +83,7 @@ type Storage struct {
 	roles         RoleStoreInterface
 	follows       FollowStoreInterface
 	activity      ActivityStoreInterface
+	invitation    InvitationStoreInterface
 }
 
 func (s *Storage) Boards() BoardStoreInterface               { return s.boards }
@@ -88,6 +94,7 @@ func (s *Storage) Games() GameStoreInterface                 { return s.games }
 func (s *Storage) Roles() RoleStoreInterface                 { return s.roles }
 func (s *Storage) Follows() FollowStoreInterface             { return s.follows }
 func (s *Storage) Activities() ActivityStoreInterface        { return s.activity }
+func (s *Storage) Invitations() InvitationStoreInterface     { return s.invitation }
 
 type TransactionalStorage interface {
 	StorageInterface
@@ -106,6 +113,7 @@ func NewStorage(db *gorm.DB) *Storage {
 		roles:         &RoleStore{db},
 		follows:       &FollowStore{db},
 		activity:      &ActivityStore{db},
+		invitation:    &InvitationStore{db},
 	}
 }
 

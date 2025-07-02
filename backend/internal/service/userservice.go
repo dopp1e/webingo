@@ -182,3 +182,29 @@ func (s *UserService) UnfollowUser(ctx context.Context, followerID, followedUser
 
 	return nil
 }
+
+func (s *UserService) CreateAndInvite(ctx context.Context, user *model.User) error {
+	tx, err := store.StartTransaction(ctx, s.db)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback() // defer rollback in case of error
+
+	if err := tx.Users().Create(ctx, user); err != nil {
+		return err
+	}
+
+	invitation := &model.Invitation{
+		UserID: user.ID,
+		Token:  []byte(uuid.NewString()),
+	}
+	if err := tx.Invitations().Create(ctx, invitation); err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
+}

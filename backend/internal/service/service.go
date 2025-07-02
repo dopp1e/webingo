@@ -35,6 +35,9 @@ type Service struct {
 	Feed interface {
 		GetFeed(ctx context.Context, userId uuid.UUID, fq model.PaginatedFeedQuery) ([]dto.FeedItem, error)
 	}
+	Auth interface {
+		CreateUser(ctx context.Context, payload *dto.UserCreateRequest) error
+	}
 }
 
 func NewService(db *gorm.DB) *Service {
@@ -50,6 +53,9 @@ func NewService(db *gorm.DB) *Service {
 			db: db,
 		},
 		Feed: &FeedService{
+			db: db,
+		},
+		Auth: &AuthService{
 			db: db,
 		},
 	}

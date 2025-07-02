@@ -1,0 +1,46 @@
+package main
+
+import (
+	"net/http"
+
+	"github.com/dopp1e/webingo/backend/internal/dto"
+	"github.com/dopp1e/webingo/backend/internal/errors"
+)
+
+// registerUserHandler godoc
+//
+// @Summary      Registers a new user
+// @Description  Registers a new user with the provided username, email, and password.
+// @Tags         authentication
+// @Accept       json
+// @Produce      json
+// @Param        user  body      model.User  true  "User registration details"
+// @Success      201   {object}  model.User  "User successfully registered"
+// @Failure      400   {object}  error  "Bad request"
+// @Failure      500   {object}  error  "Internal server error"
+// @Router       /authentication/register [post]
+func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Request) {
+	var payload dto.UserCreateRequest
+	if err := readJSON(w, r, &payload); err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	if err := app.validator.Struct(payload); err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	if err := app.service.Auth.CreateUser(r.Context(), &payload); err != nil {
+		if err == errors.ErrAlreadyExists {
+			app.conflictResponse(w, r, err)
+			return
+		}
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	if err := app.jsonResponse(w, http.StatusCreated, nil); err != nil {
+		app.internalServerError(w, r, err)
+	}
+}
