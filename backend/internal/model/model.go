@@ -36,6 +36,7 @@ func Migrate(db *gorm.DB) error {
 		&Notification{},
 		&Report{},
 		&Follow{},
+		&Activity{},
 	)
 
 	if err != nil {
