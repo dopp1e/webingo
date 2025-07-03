@@ -9,16 +9,16 @@ import (
 
 // registerUserHandler godoc
 //
-// @Summary      Registers a new user
-// @Description  Registers a new user with the provided username, email, and password.
-// @Tags         authentication
-// @Accept       json
-// @Produce      json
-// @Param        user  body      model.User  true  "User registration details"
-// @Success      201   {object}  model.User  "User successfully registered"
-// @Failure      400   {object}  error  "Bad request"
-// @Failure      500   {object}  error  "Internal server error"
-// @Router       /authentication/register [post]
+//	@Summary		Registers a new user
+//	@Description	Registers a new user with the provided username, email, and password.
+//	@Tags			authentication
+//	@Accept			json
+//	@Produce		json
+//	@Param			user	body		model.User	true	"User registration details"
+//	@Success		201		{object}	model.User	"User successfully registered"
+//	@Failure		400		{object}	error		"Bad request"
+//	@Failure		500		{object}	error		"Internal server error"
+//	@Router			/authentication/register [post]
 func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Request) {
 	var payload dto.UserCreateRequest
 	if err := readJSON(w, r, &payload); err != nil {
@@ -31,7 +31,7 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if err := app.service.Auth.CreateUser(r.Context(), &payload); err != nil {
+	if err := app.service.Users.CreateAndInvite(r.Context(), payload, app.config.mail.exp); err != nil {
 		if err == errors.ErrAlreadyExists {
 			app.conflictResponse(w, r, err)
 			return

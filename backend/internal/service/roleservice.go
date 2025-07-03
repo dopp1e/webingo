@@ -14,80 +14,66 @@ type RoleService struct {
 }
 
 func (s *RoleService) CreateRole(ctx context.Context, role *model.Role) error {
-	tx, err := store.StartTransaction(ctx, s.db)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback() // defer rollback in case of error
-
-	if err := tx.Roles().Create(ctx, role); err != nil {
-		return err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return err
-	}
-
-	return nil
+	return store.WithTransaction(ctx, s.db, func(tx store.TransactionalStorage) error {
+		err := tx.Roles().Create(ctx, role)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
 }
 
 func (s *RoleService) GetRoleByName(ctx context.Context, name string) (*model.Role, error) {
-	tx, err := store.StartTransaction(ctx, s.db)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback() // defer rollback in case of error
+	var role *model.Role
+	err := store.WithTransaction(ctx, s.db, func(tx store.TransactionalStorage) error {
+		r, err := tx.Roles().GetByName(ctx, name)
+		if err != nil {
+			return err
+		}
+		role = r
+		return nil
+	})
 
-	role, err := tx.Roles().GetByName(ctx, name)
 	if err != nil {
 		return nil, err
 	}
 
 	if role == nil {
-		return nil, gorm.ErrRecordNotFound // No role found
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, err
+		return nil, errors.ErrNotFound // No role found
 	}
 
 	return role, nil
 }
 
 func (s *RoleService) CreateRoleIfNotExists(ctx context.Context, role *model.Role) (*model.Role, error) {
-	tx, err := store.StartTransaction(ctx, s.db)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback() // defer rollback in case of error
-
-	exists, err := tx.Roles().Exists(ctx, role.Name)
-	if err != nil {
-		return nil, err
-	}
-
-	if exists {
-		// Role already exists, return it
-		existingRole, err := tx.Roles().GetByName(ctx, role.Name)
+	var foundRole *model.Role
+	err := store.WithTransaction(ctx, s.db, func(tx store.TransactionalStorage) error {
+		exists, err := tx.Roles().Exists(ctx, role.Name)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		if existingRole == nil {
-			return nil, errors.ErrNotFound // Should not happen if Exists is true
-		}
-		if err := tx.Commit(); err != nil {
-			return nil, err
-		}
-		return existingRole, nil
-	}
 
-	if err := tx.Roles().Create(ctx, role); err != nil {
+		if exists {
+			// Role already exists, return it
+			existingRole, err := tx.Roles().GetByName(ctx, role.Name)
+			if err != nil {
+				return err
+			}
+			foundRole = existingRole
+			return nil
+		}
+		if err := tx.Roles().Create(ctx, role); err != nil {
+			return err
+		}
+		foundRole = role
+		return nil
+	})
+
+	if err != nil {
 		return nil, err
 	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, err
+	if foundRole == nil {
+		return nil, errors.ErrNotFound // No role found
 	}
-
-	return role, nil // New role created
+	return foundRole, nil
 }

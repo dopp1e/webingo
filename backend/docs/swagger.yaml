@@ -501,6 +501,34 @@ info:
     url: https://www.gnu.org/licenses/gpl-3.0.en.html
   title: Webingo API
 paths:
+  /authentication/register:
+    post:
+      consumes:
+      - application/json
+      description: Registers a new user with the provided username, email, and password.
+      parameters:
+      - description: User registration details
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/model.User'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User successfully registered
+          schema:
+            $ref: '#/definitions/model.User'
+        "400":
+          description: Bad request
+          schema: {}
+        "500":
+          description: Internal server error
+          schema: {}
+      summary: Registers a new user
+      tags:
+      - authentication
   /boards:
     put:
       consumes:

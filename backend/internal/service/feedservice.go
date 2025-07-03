@@ -15,82 +15,81 @@ type FeedService struct {
 }
 
 func (s *FeedService) GetFeed(ctx context.Context, userId uuid.UUID, fq model.PaginatedFeedQuery) ([]dto.FeedItem, error) {
-	tx, err := store.StartTransaction(ctx, s.db)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback() // defer rollback in case of error
-
-	followedUsers, err := tx.Users().GetFollowedUserIDs(ctx, userId)
-	if err != nil {
-		return nil, err
-	}
-
-	activities, err := tx.Activities().GetPaginatedActivitiesByActors(ctx, followedUsers, fq)
-	if err != nil {
-		return nil, err
-	}
-
-	feedItems := make([]dto.FeedItem, 0, len(activities))
-	for _, activity := range activities {
-		feedItem := dto.FeedItem{
-			ID:          activity.ID,
-			Actor:       dto.FeedUserData{ID: activity.Actor.ID, Username: activity.Actor.Username},
-			Verb:        activity.Verb,
-			CreatedAt:   activity.CreatedAt,
-			TargetID:    activity.TargetID,
-			TargetType:  activity.TargetType,
-			ContextID:   activity.ContextID,
-			ContextType: activity.ContextType,
+	var feedItems []dto.FeedItem
+	err := store.WithTransaction(ctx, s.db, func(tx store.TransactionalStorage) error {
+		followedUsers, err := tx.Users().GetFollowedUserIDs(ctx, userId)
+		if err != nil {
+			return err
 		}
 
-		switch activity.TargetType {
-		case model.ActivityTargetTypeBoard:
-			board, boardErr := tx.Boards().GetById(ctx, activity.TargetID)
-			if boardErr != nil {
-				if boardErr == gorm.ErrRecordNotFound {
-					continue // Skip if board not found
+		activities, err := tx.Activities().GetPaginatedActivitiesByActors(ctx, followedUsers, fq)
+		if err != nil {
+			return err
+		}
+
+		f := make([]dto.FeedItem, 0, len(activities))
+		for _, activity := range activities {
+			feedItem := dto.FeedItem{
+				ID:          activity.ID,
+				Actor:       dto.FeedUserData{ID: activity.Actor.ID, Username: activity.Actor.Username},
+				Verb:        activity.Verb,
+				CreatedAt:   activity.CreatedAt,
+				TargetID:    activity.TargetID,
+				TargetType:  activity.TargetType,
+				ContextID:   activity.ContextID,
+				ContextType: activity.ContextType,
+			}
+
+			switch activity.TargetType {
+			case model.ActivityTargetTypeBoard:
+				board, boardErr := tx.Boards().GetById(ctx, activity.TargetID)
+				if boardErr != nil {
+					if boardErr == gorm.ErrRecordNotFound {
+						continue // Skip if board not found
+					}
+					return boardErr
 				}
-				return nil, boardErr
+				feedItem.Target = dto.BoardFeedItem{
+					ID:          board.ID,
+					Name:        board.Name,
+					Description: board.Description,
+					Tags:        board.Tags,
+				}
+			case model.ActivityTargetTypeComment:
+				comment, commentErr := tx.BoardComments().GetByID(ctx, activity.TargetID)
+				if commentErr != nil {
+					continue
+				}
+				feedItem.Target = dto.CommentFeedItem{
+					ID:      comment.ID,
+					Content: comment.Content,
+				}
+			case model.ActivityTargetTypeGame:
+				game, gameErr := tx.Games().GetByID(ctx, activity.TargetID)
+				if gameErr != nil {
+					continue
+				}
+				markedFieldsCount, bingoCount, markedFieldsErr := tx.Games().GetGameMarkedFieldAndBingoCount(ctx, game.ID)
+				if markedFieldsErr != nil {
+					continue
+				}
+				feedItem.Target = dto.GameFeedItem{
+					ID:           game.ID,
+					YoutubeID:    game.YoutubeVideoID,
+					Height:       game.Height,
+					Width:        game.Width,
+					MarkedFields: markedFieldsCount,
+					BingoCount:   bingoCount,
+				}
 			}
-			feedItem.Target = dto.BoardFeedItem{
-				ID:          board.ID,
-				Name:        board.Name,
-				Description: board.Description,
-				Tags:        board.Tags,
-			}
-		case model.ActivityTargetTypeComment:
-			comment, commentErr := tx.BoardComments().GetByID(ctx, activity.TargetID)
-			if commentErr != nil {
-				continue
-			}
-			feedItem.Target = dto.CommentFeedItem{
-				ID:      comment.ID,
-				Content: comment.Content,
-			}
-		case model.ActivityTargetTypeGame:
-			game, gameErr := tx.Games().GetByID(ctx, activity.TargetID)
-			if gameErr != nil {
-				continue
-			}
-			markedFieldsCount, bingoCount, markedFieldsErr := tx.Games().GetGameMarkedFieldAndBingoCount(ctx, game.ID)
-			if markedFieldsErr != nil {
-				continue
-			}
-			feedItem.Target = dto.GameFeedItem{
-				ID:           game.ID,
-				YoutubeID:    game.YoutubeVideoID,
-				Height:       game.Height,
-				Width:        game.Width,
-				MarkedFields: markedFieldsCount,
-				BingoCount:   bingoCount,
-			}
+
+			f = append(f, feedItem)
 		}
+		feedItems = f
+		return nil
+	})
 
-		feedItems = append(feedItems, feedItem)
-	}
-
-	if err := tx.Commit(); err != nil {
+	if err != nil {
 		return nil, err
 	}
 

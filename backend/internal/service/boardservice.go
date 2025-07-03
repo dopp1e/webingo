@@ -17,36 +17,37 @@ type BoardService struct {
 }
 
 func (s *BoardService) CreateBoard(ctx context.Context, request *dto.BoardCreateRequest, userID uuid.UUID) (*model.Board, error) {
-	tx, err := store.StartTransaction(ctx, s.db)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback() // defer rollback in case of error
-
-	var preparedSpaces []model.Space
-	for _, spaceRequest := range request.Spaces {
-		spaceModel := &model.Space{Content: spaceRequest.Content}
-		foundOrCreatedSpace, err := tx.Spaces().FindOrCreateByContent(ctx, spaceModel)
-		if err != nil {
-			return nil, err
+	var board *model.Board
+	err := store.WithTransaction(ctx, s.db, func(tx store.TransactionalStorage) error {
+		var preparedSpaces []model.Space
+		for _, spaceRequest := range request.Spaces {
+			spaceModel := &model.Space{Content: spaceRequest.Content}
+			foundOrCreatedSpace, err := tx.Spaces().FindOrCreateByContent(ctx, spaceModel)
+			if err != nil {
+				return err
+			}
+			preparedSpaces = append(preparedSpaces, *foundOrCreatedSpace)
 		}
-		preparedSpaces = append(preparedSpaces, *foundOrCreatedSpace)
-	}
 
-	board := &model.Board{
-		Name:        request.Name,
-		Description: request.Description,
-		Tags:        pq.StringArray(request.Tags),
-		Version:     1,
-		UserID:      userID,
-		Spaces:      preparedSpaces,
-	}
+		b := &model.Board{
+			Name:        request.Name,
+			Description: request.Description,
+			Tags:        pq.StringArray(request.Tags),
+			Version:     1,
+			UserID:      userID,
+			Spaces:      preparedSpaces,
+		}
 
-	if err := tx.Boards().Create(ctx, board); err != nil {
-		return nil, err
-	}
+		if err := tx.Boards().Create(ctx, b); err != nil {
+			return err
+		}
 
-	if err := tx.Commit(); err != nil {
+		board = b
+
+		return nil
+	})
+
+	if err != nil {
 		return nil, err
 	}
 
@@ -54,13 +55,16 @@ func (s *BoardService) CreateBoard(ctx context.Context, request *dto.BoardCreate
 }
 
 func (s *BoardService) GetById(ctx context.Context, boardId uuid.UUID) (*model.Board, error) {
-	tx, err := store.StartTransaction(ctx, s.db)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback() // defer rollback in case of error
+	var board *model.Board
+	err := store.WithTransaction(ctx, s.db, func(tx store.TransactionalStorage) error {
+		b, err := tx.Boards().GetById(ctx, boardId)
+		if err != nil {
+			return err
+		}
+		board = b
+		return nil
+	})
 
-	board, err := tx.Boards().GetById(ctx, boardId)
 	if err != nil {
 		return nil, err
 	}
@@ -69,62 +73,56 @@ func (s *BoardService) GetById(ctx context.Context, boardId uuid.UUID) (*model.B
 		return nil, errors.ErrNotFound // No board found
 	}
 
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-
 	return board, nil
 }
 
 func (s *BoardService) UpdateBoard(ctx context.Context, request *dto.BoardUpdateRequest, boardID uuid.UUID) (*model.Board, error) {
-	tx, err := store.StartTransaction(ctx, s.db)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback() // defer rollback in case of error
-
-	// ensure the board version matches the one in the database
-	existingBoard, err := tx.Boards().GetById(ctx, boardID)
-	if err != nil {
-		return nil, err
-	}
-	if existingBoard == nil {
-		return nil, errors.ErrNotFound
-	}
-
-	if existingBoard.Version != request.Version {
-		return nil, errors.ErrDataVersionMismatch
-	}
-
-	var preparedSpaces []model.Space
-	for _, spaceRequest := range request.Spaces {
-		spaceModel := &model.Space{Content: spaceRequest.Content}
-		foundOrCreatedSpace, err := tx.Spaces().FindOrCreateByContent(ctx, spaceModel)
+	var board *model.Board
+	err := store.WithTransaction(ctx, s.db, func(tx store.TransactionalStorage) error {
+		existingBoard, err := tx.Boards().GetById(ctx, boardID)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		preparedSpaces = append(preparedSpaces, *foundOrCreatedSpace)
-	}
+		if existingBoard == nil {
+			return errors.ErrNotFound
+		}
 
-	board := &model.Board{
-		Base: model.Base{
-			ID: boardID,
-		},
-		Name:        request.Name,
-		Description: request.Description,
-		Version:     request.Version + 1,
-		Tags:        pq.StringArray(request.Tags),
-		Spaces:      preparedSpaces,
-	}
+		if existingBoard.Version != request.Version {
+			return errors.ErrDataVersionMismatch
+		}
 
-	board.Spaces = preparedSpaces
-	board.Version++ // increment the version for optimistic concurrency control
+		var preparedSpaces []model.Space
+		for _, spaceRequest := range request.Spaces {
+			spaceModel := &model.Space{Content: spaceRequest.Content}
+			foundOrCreatedSpace, err := tx.Spaces().FindOrCreateByContent(ctx, spaceModel)
+			if err != nil {
+				return err
+			}
+			preparedSpaces = append(preparedSpaces, *foundOrCreatedSpace)
+		}
 
-	if err := tx.Boards().Update(ctx, board); err != nil {
-		return nil, err
-	}
+		board := &model.Board{
+			Base: model.Base{
+				ID: boardID,
+			},
+			Name:        request.Name,
+			Description: request.Description,
+			Version:     request.Version + 1,
+			Tags:        pq.StringArray(request.Tags),
+			Spaces:      preparedSpaces,
+		}
 
-	if err := tx.Commit(); err != nil {
+		board.Spaces = preparedSpaces
+		board.Version++ // increment the version for optimistic concurrency control
+
+		if err := tx.Boards().Update(ctx, board); err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
 		return nil, err
 	}
 
@@ -132,66 +130,57 @@ func (s *BoardService) UpdateBoard(ctx context.Context, request *dto.BoardUpdate
 }
 
 func (s *BoardService) DeleteBoard(ctx context.Context, boardId uuid.UUID) error {
-	tx, err := store.StartTransaction(ctx, s.db)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback() // defer rollback in case of error
+	return store.WithTransaction(ctx, s.db, func(tx store.TransactionalStorage) error {
+		request, err := tx.Boards().GetById(ctx, boardId)
+		if err != nil {
+			return err
+		}
 
-	request, err := tx.Boards().GetById(ctx, boardId)
-	if err != nil {
-		return err
-	}
+		if request == nil {
+			return errors.ErrNotFound
+		}
 
-	if request == nil {
-		return errors.ErrNotFound
-	}
+		if err := tx.Model(request).Association("Spaces").Clear(); err != nil {
+			return err
+		}
 
-	if err := tx.Model(request).Association("Spaces").Clear(); err != nil {
-		return err
-	}
+		err = tx.Boards().Delete(ctx, request)
+		if err != nil {
+			return err
+		}
 
-	err = tx.Boards().Delete(ctx, request)
-	if err != nil {
-		return err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return err
-	}
-
-	return nil
+		return nil
+	})
 }
 
 func (s *BoardService) AddComment(ctx context.Context, boardId uuid.UUID, userId uuid.UUID, request *dto.CommentPutRequest) (*model.BoardComment, error) {
-	tx, err := store.StartTransaction(ctx, s.db)
+	var comment *model.BoardComment
+	err := store.WithTransaction(ctx, s.db, func(tx store.TransactionalStorage) error {
+		exists, err := tx.Boards().Exists(ctx, boardId)
+		if err != nil {
+			return err
+		}
+		if !exists {
+			return errors.ErrNotFound
+		}
+
+		c := &model.BoardComment{
+			Content: request.Content,
+			BoardID: boardId,
+			UserID:  userId,
+		}
+
+		if err := tx.BoardComments().Create(ctx, c); err != nil {
+			return err
+		}
+
+		comment = c
+		return nil
+	})
+
 	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback() // defer rollback in case of error
-
-	exists, err := tx.Boards().Exists(ctx, boardId)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.ErrNotFound
-	}
-
-	comment := &model.BoardComment{
-		Content: request.Content,
-		BoardID: boardId,
-		UserID:  userId,
-	}
-
-	if err := tx.BoardComments().Create(ctx, comment); err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 
 	return comment, nil
-
 }

@@ -2,7 +2,9 @@ package service
 
 import (
 	"context"
+	"time"
 
+	"github.com/dopp1e/webingo/backend/internal/dto"
 	"github.com/dopp1e/webingo/backend/internal/errors"
 	"github.com/dopp1e/webingo/backend/internal/model"
 	"github.com/dopp1e/webingo/backend/internal/store"
@@ -15,56 +17,50 @@ type UserService struct {
 }
 
 func (s *UserService) Create(ctx context.Context, user *model.User) error {
-	tx, err := store.StartTransaction(ctx, s.db)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback() // defer rollback in case of error
-
-	err = tx.Users().Create(context.Background(), user)
-	if err != nil {
-		return err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return err
-	}
-	return err
+	return store.WithTransaction(ctx, s.db, func(tx store.TransactionalStorage) error {
+		err := tx.Users().Create(context.Background(), user)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
 }
 
 func (s *UserService) GetByUsername(ctx context.Context, username string) (*model.User, error) {
-	tx, err := store.StartTransaction(ctx, s.db)
+	var user *model.User
+	err := store.WithTransaction(ctx, s.db, func(tx store.TransactionalStorage) error {
+		u, err := tx.Users().GetByUsername(ctx, username)
+		if err != nil {
+			return err
+		}
+		user = u
+		return nil
+	})
+
 	if err != nil {
 		return nil, err
 	}
-	defer tx.Rollback() // defer rollback in case of error
-	user, err := tx.Users().GetByUsername(ctx, username)
-	if err != nil {
-		return nil, err
-	}
+
 	if user == nil {
 		return nil, errors.ErrNotFound // No user found
 	}
 
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
 	return user, nil
 }
 
 func (s *UserService) Exists(ctx context.Context, username string) (bool, error) {
-	tx, err := store.StartTransaction(ctx, s.db)
-	if err != nil {
-		return false, err
-	}
-	defer tx.Rollback() // defer rollback in case of error
+	var exists bool
+	err := store.WithTransaction(ctx, s.db, func(tx store.TransactionalStorage) error {
+		e, err := tx.Users().Exists(ctx, username)
 
-	exists, err := tx.Users().Exists(ctx, username)
-	if err != nil {
-		return false, err
-	}
+		if err != nil {
+			return err
+		}
+		exists = e
+		return nil
+	})
 
-	if err := tx.Commit(); err != nil {
+	if err != nil {
 		return false, err
 	}
 
@@ -72,139 +68,122 @@ func (s *UserService) Exists(ctx context.Context, username string) (bool, error)
 }
 
 func (s *UserService) CreateIfNotExists(ctx context.Context, user *model.User) (*model.User, error) {
-	tx, err := store.StartTransaction(ctx, s.db)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback() // defer rollback in case of error
-
-	exists, err := tx.Users().Exists(ctx, user.Username)
-	if err != nil {
-		return nil, err
-	}
-
-	if exists {
-		found, err := s.GetByUsername(ctx, user.Username)
+	var foundUser *model.User
+	err := store.WithTransaction(ctx, s.db, func(tx store.TransactionalStorage) error {
+		exists, err := tx.Users().Exists(ctx, user.Username)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		return found, nil
-	}
 
-	if err := tx.Users().Create(ctx, user); err != nil {
+		if exists {
+			found, err := s.GetByUsername(ctx, user.Username)
+			if err != nil {
+				return err
+			}
+			foundUser = found
+			return nil
+		}
+
+		if err := tx.Users().Create(ctx, user); err != nil {
+			return err
+		}
+
+		foundUser = user
+
+		return nil
+	})
+
+	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-
-	return user, nil
+	return foundUser, nil
 }
 
 func (s *UserService) GetByID(ctx context.Context, userID uuid.UUID) (*model.User, error) {
-	tx, err := store.StartTransaction(ctx, s.db)
+	var user *model.User
+	err := store.WithTransaction(ctx, s.db, func(tx store.TransactionalStorage) error {
+		u, err := tx.Users().GetByID(ctx, userID)
+		if err != nil {
+			if err == gorm.ErrRecordNotFound {
+				return errors.ErrNotFound // No user found
+			}
+			return err // Other error
+		}
+		user = u
+		return nil
+	})
 	if err != nil {
 		return nil, err
-	}
-	defer tx.Rollback() // defer rollback in case of error
-
-	user, err := tx.Users().GetByID(ctx, userID)
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return nil, errors.ErrNotFound // No user found
-		} else {
-			return nil, err // Other error
-		}
 	}
 	if user == nil {
 		return nil, errors.ErrNotFound // No user found
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, err
 	}
 	return user, nil
 }
 
 func (s *UserService) FollowUser(ctx context.Context, followerID, followedUserID uuid.UUID) error {
-	tx, err := store.StartTransaction(ctx, s.db)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback() // defer rollback in case of error
-
-	follow := &model.Follow{
-		FollowerID:     followerID,
-		FollowedUserID: followedUserID,
-	}
-
-	err = tx.Follows().Create(ctx, follow)
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return errors.ErrNotFound // User not found
-		} else if err == gorm.ErrDuplicatedKey {
-			return errors.ErrAlreadyExists // Follow relationship already exists
+	return store.WithTransaction(ctx, s.db, func(tx store.TransactionalStorage) error {
+		follow := &model.Follow{
+			FollowerID:     followerID,
+			FollowedUserID: followedUserID,
 		}
-		return err // Other error
-	}
 
-	if err := tx.Commit(); err != nil {
-		return err
-	}
+		err := tx.Follows().Create(ctx, follow)
+		if err != nil {
+			if err == gorm.ErrRecordNotFound {
+				return errors.ErrNotFound // User not found
+			} else if err == gorm.ErrDuplicatedKey {
+				return errors.ErrAlreadyExists // Follow relationship already exists
+			}
+			return err // Other error
+		}
 
-	return nil
+		return nil
+	})
 }
 
 func (s *UserService) UnfollowUser(ctx context.Context, followerID, followedUserID uuid.UUID) error {
-	tx, err := store.StartTransaction(ctx, s.db)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback() // defer rollback in case of error
-
-	follow := &model.Follow{
-		FollowerID:     followerID,
-		FollowedUserID: followedUserID,
-	}
-
-	err = tx.Follows().Delete(ctx, follow)
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return errors.ErrNotFound // Follow relationship not found
+	return store.WithTransaction(ctx, s.db, func(tx store.TransactionalStorage) error {
+		follow := &model.Follow{
+			FollowerID:     followerID,
+			FollowedUserID: followedUserID,
 		}
-		return err // Other error
-	}
 
-	if err := tx.Commit(); err != nil {
-		return err
-	}
+		err := tx.Follows().Delete(ctx, follow)
+		if err != nil {
+			if err == gorm.ErrRecordNotFound {
+				return errors.ErrNotFound // Follow relationship not found
+			}
+			return err // Other error
+		}
 
-	return nil
+		return nil
+	})
 }
 
-func (s *UserService) CreateAndInvite(ctx context.Context, user *model.User) error {
-	tx, err := store.StartTransaction(ctx, s.db)
-	if err != nil {
-		return err
+func (s *UserService) CreateAndInvite(ctx context.Context, req dto.UserCreateRequest, exp time.Duration) error {
+	user := &model.User{
+		Username: req.Username,
+		Email:    req.Email,
 	}
-	defer tx.Rollback() // defer rollback in case of error
+	user.SetPassword(req.Password)
 
-	if err := tx.Users().Create(ctx, user); err != nil {
-		return err
-	}
+	return store.WithTransaction(ctx, s.db, func(tx store.TransactionalStorage) error {
+		if err := tx.Users().Create(ctx, user); err != nil {
+			return err
+		}
 
-	invitation := &model.Invitation{
-		UserID: user.ID,
-		Token:  []byte(uuid.NewString()),
-	}
-	if err := tx.Invitations().Create(ctx, invitation); err != nil {
-		return err
-	}
+		invitation := &model.Invitation{
+			UserID: user.ID,
+			Token:  []byte(uuid.New().String()),
+			Expiry: time.Now().Add(exp),
+		}
 
-	if err := tx.Commit(); err != nil {
-		return err
-	}
+		if err := tx.Invitations().Create(ctx, invitation); err != nil {
+			return err
+		}
 
-	return nil
+		return nil
+	})
 }

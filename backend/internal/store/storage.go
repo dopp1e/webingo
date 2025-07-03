@@ -134,7 +134,7 @@ func (s *storageTx) Model(value interface{}) *gorm.DB {
 	return s.tx.Model(value)
 }
 
-func StartTransaction(ctx context.Context, db *gorm.DB) (TransactionalStorage, error) {
+func startTransaction(ctx context.Context, db *gorm.DB) (TransactionalStorage, error) {
 	tx := db.WithContext(ctx).Begin()
 	if tx.Error != nil {
 		return nil, tx.Error
@@ -143,4 +143,18 @@ func StartTransaction(ctx context.Context, db *gorm.DB) (TransactionalStorage, e
 		Storage: NewStorage(tx),
 		tx:      tx,
 	}, nil
+}
+
+func WithTransaction(ctx context.Context, db *gorm.DB, fn func(TransactionalStorage) error) error {
+	tx, err := startTransaction(ctx, db)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback() // Rollback in case of error
+
+	if err := fn(tx); err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }

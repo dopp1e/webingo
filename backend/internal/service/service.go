@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"time"
 
 	"github.com/dopp1e/webingo/backend/internal/dto"
 	"github.com/dopp1e/webingo/backend/internal/model"
@@ -26,6 +27,7 @@ type Service struct {
 		GetByID(context.Context, uuid.UUID) (*model.User, error)
 		FollowUser(ctx context.Context, followerID, followedID uuid.UUID) error
 		UnfollowUser(ctx context.Context, followerID, followedID uuid.UUID) error
+		CreateAndInvite(ctx context.Context, req dto.UserCreateRequest, invitationExp time.Duration) error
 	}
 	Roles interface {
 		CreateRole(context.Context, *model.Role) error
@@ -36,7 +38,6 @@ type Service struct {
 		GetFeed(ctx context.Context, userId uuid.UUID, fq model.PaginatedFeedQuery) ([]dto.FeedItem, error)
 	}
 	Auth interface {
-		CreateUser(ctx context.Context, payload *dto.UserCreateRequest) error
 	}
 }
 
