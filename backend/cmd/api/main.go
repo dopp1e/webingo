@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/dopp1e/webingo/backend/internal/dto"
 	"github.com/dopp1e/webingo/backend/internal/env"
 	"github.com/dopp1e/webingo/backend/internal/model"
 	"github.com/dopp1e/webingo/backend/internal/service"
@@ -74,13 +75,12 @@ func main() {
 
 	service := service.NewService(db)
 
-	adminRole := &model.Role{
+	adminRoleRequest := dto.RoleCreateRequest{
 		Name:        "admin",
 		Description: "Administrator role with full access",
 		Level:       1,
 	}
-
-	adminRole, err = service.Roles.CreateRoleIfNotExists(context.Background(), adminRole)
+	adminRole, err := service.Roles.CreateRoleIfNotExists(context.Background(), adminRoleRequest)
 	if err != nil {
 		logger.Fatal("failed to create admin role: %v", err)
 	}

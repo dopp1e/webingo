@@ -16,14 +16,25 @@ type UserService struct {
 	db *gorm.DB
 }
 
-func (s *UserService) Create(ctx context.Context, user *model.User) error {
-	return store.WithTransaction(ctx, s.db, func(tx store.TransactionalStorage) error {
+func (s *UserService) Create(ctx context.Context, req dto.UserCreateRequest) (*model.User, error) {
+	user := &model.User{
+		Username: req.Username,
+		Email:    req.Email,
+	}
+	user.SetPassword(req.Password)
+	err := store.WithTransaction(ctx, s.db, func(tx store.TransactionalStorage) error {
 		err := tx.Users().Create(context.Background(), user)
 		if err != nil {
 			return err
 		}
 		return nil
 	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
 }
 
 func (s *UserService) GetByUsername(ctx context.Context, username string) (*model.User, error) {

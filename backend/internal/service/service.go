@@ -20,7 +20,7 @@ type Service struct {
 		AddComment(ctx context.Context, boardId uuid.UUID, userId uuid.UUID, request *dto.CommentPutRequest) (*model.BoardComment, error)
 	}
 	Users interface {
-		Create(context.Context, *model.User) error
+		Create(context.Context, dto.UserCreateRequest) (*model.User, error)
 		GetByUsername(context.Context, string) (*model.User, error)
 		Exists(context.Context, string) (bool, error)
 		CreateIfNotExists(context.Context, *model.User) (*model.User, error)
@@ -30,9 +30,9 @@ type Service struct {
 		CreateAndInvite(ctx context.Context, req dto.UserCreateRequest, invitationExp time.Duration) error
 	}
 	Roles interface {
-		CreateRole(context.Context, *model.Role) error
+		CreateRole(context.Context, dto.RoleCreateRequest) (*model.Role, error)
 		GetRoleByName(context.Context, string) (*model.Role, error)
-		CreateRoleIfNotExists(context.Context, *model.Role) (*model.Role, error)
+		CreateRoleIfNotExists(context.Context, dto.RoleCreateRequest) (*model.Role, error)
 	}
 	Feed interface {
 		GetFeed(ctx context.Context, userId uuid.UUID, fq model.PaginatedFeedQuery) ([]dto.FeedItem, error)

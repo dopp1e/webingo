@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 
+	"github.com/dopp1e/webingo/backend/internal/dto"
 	"github.com/dopp1e/webingo/backend/internal/errors"
 	"github.com/dopp1e/webingo/backend/internal/model"
 	"github.com/dopp1e/webingo/backend/internal/store"
@@ -13,14 +14,20 @@ type RoleService struct {
 	db *gorm.DB
 }
 
-func (s *RoleService) CreateRole(ctx context.Context, role *model.Role) error {
-	return store.WithTransaction(ctx, s.db, func(tx store.TransactionalStorage) error {
-		err := tx.Roles().Create(ctx, role)
-		if err != nil {
-			return err
-		}
-		return nil
+func (s *RoleService) CreateRole(ctx context.Context, req dto.RoleCreateRequest) (*model.Role, error) {
+	role := &model.Role{
+		Name:        req.Name,
+		Description: req.Description,
+		Level:       req.Level,
+	}
+	err := store.WithTransaction(ctx, s.db, func(tx store.TransactionalStorage) error {
+		return tx.Roles().Create(ctx, role)
 	})
+
+	if err != nil {
+		return nil, err
+	}
+	return role, nil
 }
 
 func (s *RoleService) GetRoleByName(ctx context.Context, name string) (*model.Role, error) {
@@ -45,23 +52,30 @@ func (s *RoleService) GetRoleByName(ctx context.Context, name string) (*model.Ro
 	return role, nil
 }
 
-func (s *RoleService) CreateRoleIfNotExists(ctx context.Context, role *model.Role) (*model.Role, error) {
+func (s *RoleService) CreateRoleIfNotExists(ctx context.Context, req dto.RoleCreateRequest) (*model.Role, error) {
 	var foundRole *model.Role
 	err := store.WithTransaction(ctx, s.db, func(tx store.TransactionalStorage) error {
-		exists, err := tx.Roles().Exists(ctx, role.Name)
+		exists, err := tx.Roles().Exists(ctx, req.Name)
 		if err != nil {
 			return err
 		}
 
 		if exists {
 			// Role already exists, return it
-			existingRole, err := tx.Roles().GetByName(ctx, role.Name)
+			existingRole, err := tx.Roles().GetByName(ctx, req.Name)
 			if err != nil {
 				return err
 			}
 			foundRole = existingRole
 			return nil
 		}
+
+		role := &model.Role{
+			Name:        req.Name,
+			Description: req.Description,
+			Level:       req.Level,
+		}
+
 		if err := tx.Roles().Create(ctx, role); err != nil {
 			return err
 		}
