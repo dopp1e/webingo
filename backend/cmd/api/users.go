@@ -57,9 +57,9 @@ func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
 //
 //	@Success		204		"Followed successfully"
 //
-//	@Failure		400		{object}	error "User payload missing or invalid"
-//	@Failure		404		{object}	error "User not found"
-//	@Failure		409		{object}	error "Already following this user"
+//	@Failure		400		{object}	error	"User payload missing or invalid"
+//	@Failure		404		{object}	error	"User not found"
+//	@Failure		409		{object}	error	"Already following this user"
 //	@Failure		500		{object}	error
 //	@Security		ApiKeyAuth
 //	@Router			/users/{userID}/follow [post]
@@ -101,8 +101,8 @@ func (app *application) followUserHandler(w http.ResponseWriter, r *http.Request
 //	@Produce		json
 //	@Param			userID	path	string	true	"User ID"	Format(uuid)
 //	@Success		204		"Unfollowed successfully"
-//	@Failure		400		{object}	error "User payload missing or invalid"
-//	@Failure		404		{object}	error "User not found"
+//	@Failure		400		{object}	error	"User payload missing or invalid"
+//	@Failure		404		{object}	error	"User not found"
 //	@Failure		500		{object}	error
 //	@Security		ApiKeyAuth
 //	@Router			/users/{userID}/unfollow [post]

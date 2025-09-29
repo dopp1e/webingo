@@ -19,8 +19,8 @@ import (
 //	@Param			offset	query		int		false	"Offset for pagination"
 //	@Param			sort	query		string	false	"Sort order (asc/desc)"
 //	@Param			tags	query		string	false	"Comma-separated list of tags"
-//	@Param			since	query		string	false	"Filter items created since this time" Format(date-time)
-//	@Param			until	query		string	false	"Filter items created until this time" Format(date-time)
+//	@Param			since	query		string	false	"Filter items created since this time"	Format(date-time)
+//	@Param			until	query		string	false	"Filter items created until this time"	Format(date-time)
 //
 //	@Success		200		{object}	[]dto.FeedItem
 //	@Failure		400		{object}	error

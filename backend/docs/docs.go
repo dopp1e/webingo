@@ -1000,6 +1000,13 @@ const docTemplate = `{
             "x-enum-comments": {
                 "NotificationTypeUpdate": "e.g., board you favorited updated"
             },
+            "x-enum-descriptions": [
+                "",
+                "",
+                "",
+                "",
+                "e.g., board you favorited updated"
+            ],
             "x-enum-varnames": [
                 "NotificationTypeComment",
                 "NotificationTypeFollow",
@@ -1125,6 +1132,12 @@ const docTemplate = `{
             "x-enum-comments": {
                 "ReportedEntityTypeComment": "For both BoardComment and GameComment"
             },
+            "x-enum-descriptions": [
+                "",
+                "For both BoardComment and GameComment",
+                "",
+                ""
+            ],
             "x-enum-varnames": [
                 "ReportedEntityTypeBoard",
                 "ReportedEntityTypeComment",

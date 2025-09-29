@@ -116,13 +116,13 @@ func (app *application) getBoardHandler(w http.ResponseWriter, r *http.Request) 
 //	@Produce		json
 //	@Param			boardID	path		string	true	"Board ID"	Format(uuid
 //
-// @Success		200		{object}	model.Board
-// @Failure		400		{object}	error	"Invalid request payload"
-// @Failure		404		{object}	error	"Board not found"
-// @Failure		409		{object}	error	"Data version mismatch"
-// @Failure		500		{object}	error	"Internal server error"
-// @Security		ApiKeyAuth
-// @Router			/boards/{boardID} [put]
+//	@Success		200		{object}	model.Board
+//	@Failure		400		{object}	error	"Invalid request payload"
+//	@Failure		404		{object}	error	"Board not found"
+//	@Failure		409		{object}	error	"Data version mismatch"
+//	@Failure		500		{object}	error	"Internal server error"
+//	@Security		ApiKeyAuth
+//	@Router			/boards/{boardID} [put]
 func (app *application) putBoardHandler(w http.ResponseWriter, r *http.Request) {
 	board := getBoardFromContext(r)
 	if board == nil {
@@ -167,11 +167,11 @@ func (app *application) putBoardHandler(w http.ResponseWriter, r *http.Request) 
 //	@Description	Deletes a board by its ID
 //	@Tags			boards
 //
-// @Produce		json
+//	@Produce		json
 //
 //	@Param			boardID	path		string	true	"Board ID"	Format(uuid
 //
-//	@Success		200		{object}	string "Board deleted successfully"
+//	@Success		200		{object}	string	"Board deleted successfully"
 //	@Failure		400		{object}	error	"Invalid board ID"
 //	@Failure		404		{object}	error	"Board not found"
 //	@Failure		500		{object}	error	"Internal server error"
@@ -211,12 +211,12 @@ func (app *application) deleteBoardHandler(w http.ResponseWriter, r *http.Reques
 //	@Produce		json
 //	@Param			boardID	path		string	true	"Board ID"	Format(uuid
 //
-// @Success		201		{object}	model.BoardComment
-// @Failure		400		{object}	error	"Invalid request payload"
-// @Failure		404		{object}	error	"Board not found"
-// @Failure		500		{object}	error	"Internal server error"
-// @Security		ApiKeyAuth
-// @Router			/boards/{boardID}/comments [put]
+//	@Success		201		{object}	model.BoardComment
+//	@Failure		400		{object}	error	"Invalid request payload"
+//	@Failure		404		{object}	error	"Board not found"
+//	@Failure		500		{object}	error	"Internal server error"
+//	@Security		ApiKeyAuth
+//	@Router			/boards/{boardID}/comments [put]
 func (app *application) createBoardCommentHandler(w http.ResponseWriter, r *http.Request) {
 	board := getBoardFromContext(r)
 	if board == nil {
