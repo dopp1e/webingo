@@ -68,3 +68,11 @@ func (s *UserStore) GetFollowedUserIDs(ctx context.Context, userID uuid.UUID) ([
 
 	return followedUsers, nil // Return list of followed user IDs
 }
+
+func (s *UserStore) Activate(ctx context.Context, userID uuid.UUID) error {
+	result := s.db.WithContext(ctx).Model(&model.User{}).Where("id = ?", userID).Update("is_active", true)
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
+}

@@ -39,7 +39,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.User"
+                            "$ref": "#/definitions/dto.UserCreateRequest"
                         }
                     }
                 ],
@@ -47,7 +47,7 @@ const docTemplate = `{
                     "201": {
                         "description": "User successfully registered",
                         "schema": {
-                            "$ref": "#/definitions/model.User"
+                            "$ref": "#/definitions/dto.UserActivateData"
                         }
                     },
                     "400": {
@@ -403,6 +403,48 @@ const docTemplate = `{
                 }
             }
         },
+        "/users/activate/{token}": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Activates a user account using the provided activation token",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Activate a previously registered user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Activation Token",
+                        "name": "token",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "User activated successfully",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {}
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {}
+                    }
+                }
+            }
+        },
         "/users/{userID}": {
             "get": {
                 "security": [
@@ -593,6 +635,43 @@ const docTemplate = `{
                 },
                 "username": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.UserActivateData": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.UserCreateRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "password",
+                "username"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "password": {
+                    "description": "Add min length for password",
+                    "type": "string",
+                    "minLength": 8
+                },
+                "username": {
+                    "type": "string",
+                    "maxLength": 50,
+                    "minLength": 3
                 }
             }
         },

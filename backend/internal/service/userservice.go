@@ -2,6 +2,9 @@ package service
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"strings"
 	"time"
 
 	"github.com/dopp1e/webingo/backend/internal/dto"
@@ -173,7 +176,7 @@ func (s *UserService) UnfollowUser(ctx context.Context, followerID, followedUser
 	})
 }
 
-func (s *UserService) CreateAndInvite(ctx context.Context, req dto.UserCreateRequest, exp time.Duration) error {
+func (s *UserService) CreateAndInvite(ctx context.Context, req dto.UserCreateRequest, hashToken string, exp time.Duration) error {
 	user := &model.User{
 		Username: req.Username,
 		Email:    req.Email,
@@ -181,17 +184,69 @@ func (s *UserService) CreateAndInvite(ctx context.Context, req dto.UserCreateReq
 	user.SetPassword(req.Password)
 
 	return store.WithTransaction(ctx, s.db, func(tx store.TransactionalStorage) error {
-		if err := tx.Users().Create(ctx, user); err != nil {
+		role, err := tx.Roles().GetByName(ctx, "user") // Ensure the "user" role exists
+		if err != nil {
 			return err
+		}
+		user.RoleID = role.ID
+		if err := tx.Users().Create(ctx, user); err != nil {
+			switch err {
+			case gorm.ErrDuplicatedKey:
+				if strings.Contains(err.Error(), "username") {
+					return errors.ErrUsernameExists
+				} else if strings.Contains(err.Error(), "email") {
+					return errors.ErrEmailExists
+				}
+				return errors.ErrAlreadyExists
+			default:
+				return err
+			}
 		}
 
 		invitation := &model.Invitation{
 			UserID: user.ID,
-			Token:  []byte(uuid.New().String()),
+			Token:  []byte(hashToken),
 			Expiry: time.Now().Add(exp),
 		}
 
 		if err := tx.Invitations().Create(ctx, invitation); err != nil {
+			return err
+		}
+
+		return nil
+	})
+}
+
+func (s *UserService) Activate(ctx context.Context, token string) error {
+	hash := sha256.Sum256([]byte(token))
+	hashedToken := hex.EncodeToString(hash[:])
+
+	return store.WithTransaction(ctx, s.db, func(tx store.TransactionalStorage) error {
+		invitation, err := tx.Invitations().GetByToken(ctx, []byte(hashedToken))
+		if err != nil {
+			if err == gorm.ErrRecordNotFound {
+				return errors.ErrNotFound // Invitation not found
+			}
+			return err // Other error
+		}
+
+		if time.Now().After(invitation.Expiry) {
+			return errors.ErrTokenExpired // Invitation expired
+		}
+
+		user, err := tx.Users().GetByID(ctx, invitation.UserID)
+		if err != nil {
+			if err == gorm.ErrRecordNotFound {
+				return errors.ErrNotFound // User not found
+			}
+			return err // Other error
+		}
+
+		if err := tx.Users().Activate(ctx, user.ID); err != nil {
+			return err
+		}
+
+		if err := tx.Invitations().Delete(ctx, invitation); err != nil {
 			return err
 		}
 

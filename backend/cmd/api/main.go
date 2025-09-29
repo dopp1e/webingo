@@ -57,6 +57,10 @@ func main() {
 	// Logger
 
 	logger := zap.Must(zap.NewProduction()).Sugar()
+	if cfg.env == "dev" {
+		logger = zap.Must(zap.NewDevelopment()).Sugar()
+	}
+
 	defer logger.Sync() // flushes buffer, if any
 
 	// Database connection
@@ -84,13 +88,22 @@ func main() {
 	if err != nil {
 		logger.Fatal("failed to create admin role: %v", err)
 	}
+	userRoleRequest := dto.RoleCreateRequest{
+		Name:        "user",
+		Description: "Default user role with limited access",
+		Level:       10,
+	}
+	_, err = service.Roles.CreateRoleIfNotExists(context.Background(), userRoleRequest)
+	if err != nil {
+		logger.Fatal("failed to create user role: %v", err)
+	}
 	adminUser := &model.User{
 		Username: admin_username,
-		Password: admin_password,
 		Email:    "admin@example.com",
 		IsActive: true,
 		RoleID:   adminRole.ID,
 	}
+	adminUser.SetPassword(admin_password)
 	adminUser, err = service.Users.CreateIfNotExists(context.Background(), adminUser)
 	if err != nil {
 		logger.Fatal("failed to create admin user: %v", err)

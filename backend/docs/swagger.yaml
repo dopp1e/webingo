@@ -30,6 +30,32 @@ definitions:
       username:
         type: string
     type: object
+  dto.UserActivateData:
+    properties:
+      email:
+        type: string
+      token:
+        type: string
+      username:
+        type: string
+    type: object
+  dto.UserCreateRequest:
+    properties:
+      email:
+        type: string
+      password:
+        description: Add min length for password
+        minLength: 8
+        type: string
+      username:
+        maxLength: 50
+        minLength: 3
+        type: string
+    required:
+    - email
+    - password
+    - username
+    type: object
   model.ActivityTargetType:
     enum:
     - board
@@ -523,14 +549,14 @@ paths:
         name: user
         required: true
         schema:
-          $ref: '#/definitions/model.User'
+          $ref: '#/definitions/dto.UserCreateRequest'
       produces:
       - application/json
       responses:
         "201":
           description: User successfully registered
           schema:
-            $ref: '#/definitions/model.User'
+            $ref: '#/definitions/dto.UserActivateData'
         "400":
           description: Bad request
           schema: {}
@@ -861,6 +887,33 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Unfollow a user
+      tags:
+      - users
+  /users/activate/{token}:
+    put:
+      description: Activates a user account using the provided activation token
+      parameters:
+      - description: Activation Token
+        in: path
+        name: token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User activated successfully
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Activate a previously registered user
       tags:
       - users
 securityDefinitions:

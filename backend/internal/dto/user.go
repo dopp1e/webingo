@@ -27,3 +27,10 @@ type UserLoginRequest struct {
 type FollowUserRequest struct {
 	FollowedUserID uuid.UUID `json:"followedUserId" validate:"required"`
 }
+
+// UserActivateData for activating a user account.
+type UserActivateData struct {
+	Username string `json:"username"`
+	Email    string `json:"email"`
+	Token    string `json:"token"`
+}
