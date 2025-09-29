@@ -76,3 +76,11 @@ func (s *UserStore) Activate(ctx context.Context, userID uuid.UUID) error {
 	}
 	return nil
 }
+
+func (s *UserStore) Delete(ctx context.Context, userID uuid.UUID) error {
+	result := s.db.WithContext(ctx).Where("id = ?", userID).Delete(&model.User{})
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
+}

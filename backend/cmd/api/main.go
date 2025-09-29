@@ -6,6 +6,7 @@ import (
 
 	"github.com/dopp1e/webingo/backend/internal/dto"
 	"github.com/dopp1e/webingo/backend/internal/env"
+	"github.com/dopp1e/webingo/backend/internal/mailer"
 	"github.com/dopp1e/webingo/backend/internal/model"
 	"github.com/dopp1e/webingo/backend/internal/service"
 	"github.com/go-playground/validator/v10"
@@ -42,6 +43,8 @@ func main() {
 	cfg := config{
 		dsn:    env.GetString("ADDR", ":8080"),
 		apiUrl: env.GetString("EXTERNAL_URL", "localhost:8080"),
+		frontendUrl: env.GetString("FRONTEND_URL",
+			"http://localhost:3000"),
 		db: dbConfig{
 			dsn:          dsn,
 			maxOpenConns: env.GetInt("DB_MAX_OPEN_CONNS", 30),
@@ -51,6 +54,13 @@ func main() {
 		env: env.GetString("ENV", "dev"),
 		mail: mailConfig{
 			exp: time.Hour * 24 * 3, // 3 days
+			smtp: smtpConfig{
+				host:     env.GetString("SMTP_HOST", "smtp.example.com"),
+				port:     env.GetInt("SMTP_PORT", 587),
+				username: env.GetString("SMTP_USERNAME", "user@example.com"),
+				password: env.GetString("SMTP_PASSWORD", "password"),
+				email:    env.GetString("SMTP_EMAIL", "noreply@example.com"),
+			},
 		},
 	}
 
@@ -62,6 +72,14 @@ func main() {
 	}
 
 	defer logger.Sync() // flushes buffer, if any
+
+	mailer := mailer.NewSMTPMailer(
+		cfg.mail.smtp.host,
+		cfg.mail.smtp.port,
+		cfg.mail.smtp.username,
+		cfg.mail.smtp.password,
+		cfg.mail.smtp.email,
+	)
 
 	// Database connection
 	db, err := gorm.Open(postgres.Open(cfg.db.dsn), &gorm.Config{
@@ -117,6 +135,7 @@ func main() {
 		service:   *service,
 		validator: *validate,
 		logger:    logger,
+		mailer:    mailer,
 	}
 
 	mux := app.mount()

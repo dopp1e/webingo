@@ -29,6 +29,7 @@ type Service struct {
 		UnfollowUser(ctx context.Context, followerID, followedID uuid.UUID) error
 		CreateAndInvite(ctx context.Context, req dto.UserCreateRequest, hashToken string, invitationExp time.Duration) error
 		Activate(ctx context.Context, token string) error
+		DeleteByUsername(ctx context.Context, username string) error
 	}
 	Roles interface {
 		CreateRole(context.Context, dto.RoleCreateRequest) (*model.Role, error)

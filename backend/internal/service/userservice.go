@@ -253,3 +253,25 @@ func (s *UserService) Activate(ctx context.Context, token string) error {
 		return nil
 	})
 }
+
+func (s *UserService) DeleteByUsername(ctx context.Context, username string) error {
+	return store.WithTransaction(ctx, s.db, func(tx store.TransactionalStorage) error {
+		user, err := tx.Users().GetByUsername(ctx, username)
+		if err != nil {
+			if err == gorm.ErrRecordNotFound {
+				return errors.ErrNotFound // User not found
+			}
+			return err // Other error
+		}
+
+		if err := tx.Invitations().DeleteAllWithUserID(ctx, user.ID[:]); err != nil {
+			return err
+		}
+
+		if err := tx.Users().Delete(ctx, user.ID); err != nil {
+			return err
+		}
+
+		return nil
+	})
+}

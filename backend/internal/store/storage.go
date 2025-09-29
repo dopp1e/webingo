@@ -29,6 +29,7 @@ type UserStoreInterface interface {
 	GetByID(context.Context, uuid.UUID) (*model.User, error)
 	GetFollowedUserIDs(context.Context, uuid.UUID) ([]uuid.UUID, error)
 	Activate(context.Context, uuid.UUID) error
+	Delete(context.Context, uuid.UUID) error
 }
 
 type SpaceStoreInterface interface {
@@ -63,6 +64,7 @@ type InvitationStoreInterface interface {
 	Create(context.Context, *model.Invitation) error
 	GetByToken(context.Context, []byte) (*model.Invitation, error)
 	Delete(context.Context, *model.Invitation) error
+	DeleteAllWithUserID(context.Context, []byte) error
 }
 
 type StorageInterface interface {

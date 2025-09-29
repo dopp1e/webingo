@@ -1,0 +1,19 @@
+{{define "subject"}}Finish registration with webingo{{end}}
+
+{{define "Body"}}
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"
+    </head>
+    <body>
+        <p>Hi {{.Username}},</p>
+        <p>Thank you for signing up for webingo.</p>
+        <p>Before you can use your account, please confirm your email address by clicking the link below:</p>
+        <p><a href="{{.ActivationURL}}">{{.ActivationURL}}</a></p>
+        <p>If you did not expect this invitation, you can safely ignore this email.</p>
+        <p>Best regards,<br/>The webingo team</p>
+    </body>
+</html>
+{{end}}

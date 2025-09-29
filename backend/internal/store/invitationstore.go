@@ -38,3 +38,12 @@ func (s *InvitationStore) Delete(ctx context.Context, invitation *model.Invitati
 
 	return nil
 }
+
+func (s *InvitationStore) DeleteAllWithUserID(ctx context.Context, userID []byte) error {
+	result := s.db.WithContext(ctx).Where("user_id = ?", userID).Delete(&model.Invitation{})
+	if result.Error != nil {
+		return result.Error
+	}
+
+	return nil
+}

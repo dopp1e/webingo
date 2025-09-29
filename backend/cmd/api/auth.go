@@ -7,6 +7,7 @@ import (
 
 	"github.com/dopp1e/webingo/backend/internal/dto"
 	"github.com/dopp1e/webingo/backend/internal/errors"
+	"github.com/dopp1e/webingo/backend/internal/mailer"
 	"github.com/google/uuid"
 )
 
@@ -52,6 +53,34 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		Username: payload.Username,
 		Email:    payload.Email,
 		Token:    plainToken,
+	}
+
+	vars := struct {
+		Username      string
+		ActivationURL string
+	}{
+		Username:      payload.Username,
+		ActivationURL: app.config.frontendUrl + "/activate?token=" + plainToken,
+	}
+
+	err := app.mailer.Send(
+		mailer.UserInvitationTemplate,
+		payload.Username,
+		payload.Email,
+		vars,
+		app.config.env != "production",
+	)
+
+	if err != nil {
+		app.logger.Errorw("failed to send invitation email", "error", err)
+
+		// rollback user creation (SAGA pattern)
+		if delErr := app.service.Users.DeleteByUsername(r.Context(), payload.Username); delErr != nil {
+			app.logger.Errorw("failed to rollback user creation after email failure", "error", delErr)
+		}
+
+		app.internalServerError(w, r, err)
+		return
 	}
 
 	if err := app.jsonResponse(w, http.StatusCreated, userData); err != nil {

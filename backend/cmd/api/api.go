@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/dopp1e/webingo/backend/docs"
+	"github.com/dopp1e/webingo/backend/internal/mailer"
 	"github.com/dopp1e/webingo/backend/internal/service"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -19,18 +20,21 @@ type application struct {
 	service   service.Service
 	validator validator.Validate
 	logger    *zap.SugaredLogger
+	mailer    mailer.Client
 }
 
 type config struct {
-	dsn    string
-	db     dbConfig
-	env    string
-	apiUrl string
-	mail   mailConfig
+	dsn         string
+	db          dbConfig
+	env         string
+	apiUrl      string
+	frontendUrl string
+	mail        mailConfig
 }
 
 type mailConfig struct {
-	exp time.Duration
+	exp  time.Duration
+	smtp smtpConfig
 }
 
 type dbConfig struct {
@@ -38,6 +42,14 @@ type dbConfig struct {
 	maxOpenConns int
 	maxIdleConns int
 	maxIdleTime  string
+}
+
+type smtpConfig struct {
+	host     string
+	port     int
+	username string
+	password string
+	email    string
 }
 
 func (app *application) mount() http.Handler {
