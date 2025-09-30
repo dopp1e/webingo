@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"html/template"
 	"log"
+	"math"
+	"time"
 
 	"gopkg.in/gomail.v2"
 )
@@ -52,25 +54,24 @@ func (m *SMTPMailer) Send(templateFile, username, email string, data any, isSand
 
 	dialer := gomail.NewDialer(m.host, m.port, m.username, m.password)
 
+	var retryErr error
 	for i := 0; i < maxRetries; i++ {
 		if isSandbox {
 			log.Printf("Sandbox mode: Email to %s not sent. Subject: %s", email, subject.String())
-			log.Printf("Email body: %s", body.String())
 			return nil
-		} else {
-			log.Printf("Attempting to send email to %s (attempt %d)", email, i+1)
 		}
 
 		if err := dialer.DialAndSend(message); err != nil {
 			if i == maxRetries-1 {
-				return err
+				retryErr = err
 			}
+			// increased delay
+			time.Sleep(time.Second * time.Duration(math.Pow(2, float64(i+1))))
 			continue
 		}
 
-		log.Printf("Email sent to %s", email)
 		return nil
 	}
 
-	return fmt.Errorf("failed to send email to %s after %d attempts", email, maxRetries)
+	return fmt.Errorf("failed to send email to %s after %d attempts, error: %v", email, maxRetries, retryErr)
 }

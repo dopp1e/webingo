@@ -83,6 +83,8 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	app.logger.Info("sent invitation email to " + payload.Email)
+
 	if err := app.jsonResponse(w, http.StatusCreated, userData); err != nil {
 		app.internalServerError(w, r, err)
 	}
