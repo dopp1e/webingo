@@ -33,6 +33,16 @@ func (s *UserStore) GetByUsername(ctx context.Context, username string) (*model.
 	return &user, nil // User found
 }
 
+func (s *UserStore) GetByEmail(ctx context.Context, email string) (*model.User, error) {
+	var user model.User
+	result := s.db.WithContext(ctx).Where("email = ?", email).First(&user)
+
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return &user, nil // User found
+}
+
 func (s *UserStore) Exists(ctx context.Context, username string) (bool, error) {
 	var count int64
 	result := s.db.WithContext(ctx).Model(&model.User{}).Where("username = ?", username).Count(&count)

@@ -61,6 +61,58 @@ const docTemplate = `{
                 }
             }
         },
+        "/authentication/token": {
+            "post": {
+                "description": "Creates a JWT authentication token for a user with the provided username and password.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "authentication"
+                ],
+                "summary": "Creates an authentication token",
+                "parameters": [
+                    {
+                        "description": "User Credentials",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CreateUserTokenRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Token",
+                        "schema": {
+                            "type": "body"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "body"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "body"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "body"
+                        }
+                    }
+                }
+            }
+        },
         "/boards": {
             "put": {
                 "security": [
@@ -595,6 +647,23 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "dto.CreateUserTokenRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "password"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "maxLength": 255
+                },
+                "password": {
+                    "type": "string",
+                    "maxLength": 72
+                }
+            }
+        },
         "dto.FeedItem": {
             "type": "object",
             "properties": {

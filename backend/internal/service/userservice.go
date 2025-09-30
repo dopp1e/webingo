@@ -275,3 +275,25 @@ func (s *UserService) DeleteByUsername(ctx context.Context, username string) err
 		return nil
 	})
 }
+
+func (s *UserService) GetByEmail(ctx context.Context, email string) (*model.User, error) {
+	var user *model.User
+	err := store.WithTransaction(ctx, s.db, func(tx store.TransactionalStorage) error {
+		u, err := tx.Users().GetByEmail(ctx, email)
+		if err != nil {
+			return err
+		}
+		user = u
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if user == nil {
+		return nil, errors.ErrNotFound // No user found
+	}
+
+	return user, nil
+}

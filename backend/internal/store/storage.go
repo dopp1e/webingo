@@ -25,6 +25,7 @@ type BoardCommentStoreInterface interface {
 type UserStoreInterface interface {
 	Create(context.Context, *model.User) error
 	GetByUsername(context.Context, string) (*model.User, error)
+	GetByEmail(context.Context, string) (*model.User, error)
 	Exists(context.Context, string) (bool, error)
 	GetByID(context.Context, uuid.UUID) (*model.User, error)
 	GetFollowedUserIDs(context.Context, uuid.UUID) ([]uuid.UUID, error)

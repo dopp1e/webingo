@@ -1,5 +1,17 @@
 basePath: /v1
 definitions:
+  dto.CreateUserTokenRequest:
+    properties:
+      email:
+        maxLength: 255
+        type: string
+      password:
+        maxLength: 72
+        type: string
+    required:
+    - email
+    - password
+    type: object
   dto.FeedItem:
     properties:
       actor:
@@ -564,6 +576,41 @@ paths:
           description: Internal server error
           schema: {}
       summary: Registers a new user
+      tags:
+      - authentication
+  /authentication/token:
+    post:
+      consumes:
+      - application/json
+      description: Creates a JWT authentication token for a user with the provided
+        username and password.
+      parameters:
+      - description: User Credentials
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateUserTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Token
+          schema:
+            type: body
+        "400":
+          description: Bad Request
+          schema:
+            type: body
+        "401":
+          description: Unauthorized
+          schema:
+            type: body
+        "500":
+          description: Internal Server Error
+          schema:
+            type: body
+      summary: Creates an authentication token
       tags:
       - authentication
   /boards:

@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/dopp1e/webingo/backend/internal/auth"
 	"github.com/dopp1e/webingo/backend/internal/dto"
 	"github.com/dopp1e/webingo/backend/internal/env"
 	"github.com/dopp1e/webingo/backend/internal/mailer"
@@ -62,6 +63,18 @@ func main() {
 				email:    env.GetString("SMTP_EMAIL", "noreply@example.com"),
 			},
 		},
+		auth: authConfig{
+			basic: basicAuthConfig{
+				user: env.GetString("BASIC_AUTH_USER", "admin"),
+				pass: env.GetString("BASIC_AUTH_PASSWORD", "password"),
+			},
+			token: tokenConfig{
+				secret:          env.GetString("TOKEN_SECRET", "yoursuperdupersecretthingkeydoodad"),
+				expiration:      time.Hour * time.Duration(env.GetInt("TOKEN_EXPIRATION", 24)),       // 1 day
+				refreshInterval: time.Hour * time.Duration(env.GetInt("TOKEN_REFRESH_INTERVAL", 12)), // 12 hours
+				issuer:          env.GetString("TOKEN_ISSUER", "webingo"),
+			},
+		},
 	}
 
 	// Logger
@@ -80,6 +93,9 @@ func main() {
 		cfg.mail.smtp.password,
 		cfg.mail.smtp.email,
 	)
+
+	tokenHost := "webingo"
+	jwtAuthenticator := auth.NewJWTAuthenticator(cfg.auth.token.secret, tokenHost, tokenHost)
 
 	// Database connection
 	db, err := gorm.Open(postgres.Open(cfg.db.dsn), &gorm.Config{
@@ -136,6 +152,7 @@ func main() {
 		validator: *validate,
 		logger:    logger,
 		mailer:    mailer,
+		auth:      jwtAuthenticator,
 	}
 
 	mux := app.mount()

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/dopp1e/webingo/backend/docs"
+	"github.com/dopp1e/webingo/backend/internal/auth"
 	"github.com/dopp1e/webingo/backend/internal/mailer"
 	"github.com/dopp1e/webingo/backend/internal/service"
 	"github.com/go-chi/chi/v5"
@@ -21,6 +22,7 @@ type application struct {
 	validator validator.Validate
 	logger    *zap.SugaredLogger
 	mailer    mailer.Client
+	auth      auth.Authenticator
 }
 
 type config struct {
@@ -30,6 +32,24 @@ type config struct {
 	apiUrl      string
 	frontendUrl string
 	mail        mailConfig
+	auth        authConfig
+}
+
+type authConfig struct {
+	basic basicAuthConfig
+	token tokenConfig
+}
+
+type tokenConfig struct {
+	secret          string
+	expiration      time.Duration
+	refreshInterval time.Duration
+	issuer          string
+}
+
+type basicAuthConfig struct {
+	user string
+	pass string
 }
 
 type mailConfig struct {
@@ -63,7 +83,7 @@ func (app *application) mount() http.Handler {
 	r.Use(middleware.Timeout(60 * time.Second))
 
 	r.Route("/v1", func(r chi.Router) {
-		r.Get("/health", app.healthCheckHandler)
+		r.With(app.BasicAuthMiddleware()).Get("/health", app.healthCheckHandler)
 
 		docsURL := fmt.Sprintf("%s/swagger/doc.json", app.config.dsn)
 		r.Get("/swagger/*", httpSwagger.Handler(httpSwagger.URL(docsURL)))
@@ -104,6 +124,7 @@ func (app *application) mount() http.Handler {
 		// Public routes
 		r.Route("/authentication", func(r chi.Router) {
 			r.Post("/register", app.registerUserHandler)
+			r.Post("/token", app.createTokenHandler)
 		})
 	})
 

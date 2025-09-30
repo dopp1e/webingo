@@ -30,6 +30,7 @@ type Service struct {
 		CreateAndInvite(ctx context.Context, req dto.UserCreateRequest, hashToken string, invitationExp time.Duration) error
 		Activate(ctx context.Context, token string) error
 		DeleteByUsername(ctx context.Context, username string) error
+		GetByEmail(ctx context.Context, email string) (*model.User, error)
 	}
 	Roles interface {
 		CreateRole(context.Context, dto.RoleCreateRequest) (*model.Role, error)

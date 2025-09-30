@@ -27,3 +27,15 @@ func (app *application) conflictResponse(w http.ResponseWriter, r *http.Request,
 	app.logger.Warnw("Conflict", "error", err)
 	generalErrorResponse(w, r, err, http.StatusConflict, err.Error())
 }
+
+func (app *application) unauthorizedResponse(w http.ResponseWriter, r *http.Request, err error) {
+	app.logger.Warnw("Unauthorized", "error", err)
+	generalErrorResponse(w, r, err, http.StatusUnauthorized, err.Error())
+}
+
+func (app *application) unauthorizedBasicResponse(w http.ResponseWriter, r *http.Request, err error) {
+	app.logger.Warnw("Unauthorized (Basic)", "error", err)
+
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted", charset="UTF-8"`)
+	generalErrorResponse(w, r, err, http.StatusUnauthorized, err.Error())
+}

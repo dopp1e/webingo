@@ -34,3 +34,8 @@ type UserActivateData struct {
 	Email    string `json:"email"`
 	Token    string `json:"token"`
 }
+
+type CreateUserTokenRequest struct {
+	Email    string `json:"email" validate:"required,email,max=255"`
+	Password string `json:"password" validate:"required,max=72"`
+}
