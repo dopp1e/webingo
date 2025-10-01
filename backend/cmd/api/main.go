@@ -78,7 +78,6 @@ func main() {
 	}
 
 	// Logger
-
 	logger := zap.Must(zap.NewProduction()).Sugar()
 	if cfg.env == "dev" {
 		logger = zap.Must(zap.NewDevelopment()).Sugar()

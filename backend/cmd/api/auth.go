@@ -131,7 +131,7 @@ func (app *application) createTokenHandler(w http.ResponseWriter, r *http.Reques
 
 	claims := jwt.MapClaims{
 		"sub": user.ID.String(),
-		"aud": "webingo",
+		"aud": app.config.auth.token.issuer,
 		"iss": app.config.auth.token.issuer,
 		"exp": time.Now().Add(app.config.auth.token.expiration).Unix(),
 		"iat": time.Now().Unix(),
