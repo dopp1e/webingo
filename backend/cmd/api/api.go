@@ -89,6 +89,7 @@ func (app *application) mount() http.Handler {
 		r.Get("/swagger/*", httpSwagger.Handler(httpSwagger.URL(docsURL)))
 
 		r.Route("/boards", func(r chi.Router) {
+			r.Use(app.AuthTokenMiddleware)
 			r.Put("/", app.createBoardHandler)
 
 			r.Route("/{boardID}", func(r chi.Router) {
@@ -117,6 +118,7 @@ func (app *application) mount() http.Handler {
 			})
 
 			r.Group(func(r chi.Router) {
+				r.Use(app.AuthTokenMiddleware)
 				r.Get("/feed", app.getUserFeedHandler)
 			})
 		})

@@ -75,9 +75,15 @@ func (app *application) followUserHandler(w http.ResponseWriter, r *http.Request
 		}
 	}
 
-	followerID := uuid.MustParse("558cf4e5-d324-4da7-a5eb-5836674ede97") // Replace with actual user ID from context or session
+	ctx := r.Context()
 
-	err = app.service.Users.FollowUser(r.Context(), followerID, followedUser.ID)
+	user, err := app.getUserFromContext(ctx)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	err = app.service.Users.FollowUser(ctx, user.ID, followedUser.ID)
 	if err != nil {
 		if err == errors.ErrAlreadyExists {
 			app.conflictResponse(w, r, err)
@@ -118,9 +124,15 @@ func (app *application) unfollowUserHandler(w http.ResponseWriter, r *http.Reque
 		}
 	}
 
-	followerID := uuid.MustParse("558cf4e5-d324-4da7-a5eb-5836674ede97") // Replace with actual user ID from context or session
+	ctx := r.Context()
 
-	err = app.service.Users.UnfollowUser(r.Context(), followerID, followedUser.ID)
+	user, err := app.getUserFromContext(ctx)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	err = app.service.Users.UnfollowUser(ctx, user.ID, followedUser.ID)
 	if err != nil {
 		if err == errors.ErrNotFound {
 			app.notFoundResponse(w, r, err)

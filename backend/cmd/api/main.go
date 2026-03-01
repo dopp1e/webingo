@@ -93,8 +93,7 @@ func main() {
 		cfg.mail.smtp.email,
 	)
 
-	tokenHost := "webingo"
-	jwtAuthenticator := auth.NewJWTAuthenticator(cfg.auth.token.secret, tokenHost, tokenHost)
+	jwtAuthenticator := auth.NewJWTAuthenticator(cfg.auth.token.secret, cfg.auth.token.issuer, cfg.auth.token.issuer)
 
 	// Database connection
 	db, err := gorm.Open(postgres.Open(cfg.db.dsn), &gorm.Config{

@@ -54,7 +54,6 @@ func (app *application) boardContextMiddleware(next http.Handler) http.Handler {
 //	@Security		ApiKeyAuth
 //	@Router			/boards [put]
 func (app *application) createBoardHandler(w http.ResponseWriter, r *http.Request) {
-	// TODO: add verification of user making rqeust
 	var payload dto.BoardCreateRequest
 	if err := readJSON(w, r, &payload); err != nil {
 		app.badRequestResponse(w, r, err)
@@ -68,7 +67,13 @@ func (app *application) createBoardHandler(w http.ResponseWriter, r *http.Reques
 
 	ctx := r.Context()
 
-	board, err := app.service.Boards.CreateBoard(ctx, &payload, uuid.MustParse("558cf4e5-d324-4da7-a5eb-5836674ede97")) // Replace uuid.New() with the actual user ID from the context or session
+	user, err := app.getUserFromContext(ctx)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	board, err := app.service.Boards.CreateBoard(ctx, &payload, user.ID) // Replace uuid.New() with the actual user ID from the context or session
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return
@@ -237,7 +242,13 @@ func (app *application) createBoardCommentHandler(w http.ResponseWriter, r *http
 
 	ctx := r.Context()
 
-	comment, err := app.service.Boards.AddComment(ctx, board.ID, uuid.MustParse("558cf4e5-d324-4da7-a5eb-5836674ede97"), &payload)
+	user, err := app.getUserFromContext(ctx)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	comment, err := app.service.Boards.AddComment(ctx, board.ID, user.ID, &payload)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return
