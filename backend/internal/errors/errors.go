@@ -10,4 +10,5 @@ var (
 	ErrEmailExists         = errors.New("user with this email already exists")
 	ErrTokenRequired       = errors.New("token is required")
 	ErrTokenExpired        = errors.New("token has expired")
+	ErrIncorrectPassword   = errors.New("incorrect password")
 )

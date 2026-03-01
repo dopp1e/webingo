@@ -84,7 +84,7 @@ func (u *User) CheckPassword(text string) bool {
 	}
 
 	parts := strings.Split(u.Password, "$")
-	if len(parts) != 6 || parts[0] != "$argon2id" {
+	if len(parts) != 6 || parts[1] != "argon2id" {
 		return false
 	}
 

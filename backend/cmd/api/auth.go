@@ -129,6 +129,12 @@ func (app *application) createTokenHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	ok := user.CheckPassword(payload.Password)
+	if !ok {
+		app.unauthorizedResponse(w, r, errors.ErrIncorrectPassword)
+		return
+	}
+
 	claims := jwt.MapClaims{
 		"sub": user.ID.String(),
 		"aud": app.config.auth.token.issuer,
