@@ -11,4 +11,5 @@ var (
 	ErrTokenRequired       = errors.New("token is required")
 	ErrTokenExpired        = errors.New("token has expired")
 	ErrIncorrectPassword   = errors.New("incorrect password")
+	ErrUserNotFound        = errors.New("user not found")
 )

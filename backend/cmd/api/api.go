@@ -96,8 +96,8 @@ func (app *application) mount() http.Handler {
 				r.Use(app.boardContextMiddleware)
 
 				r.Get("/", app.getBoardHandler)
-				r.Put("/", app.putBoardHandler)
-				r.Delete("/", app.deleteBoardHandler)
+				r.Put("/", app.checkBingoOwnership("moderator", app.putBoardHandler))
+				r.Delete("/", app.checkBingoOwnership("admin", app.deleteBoardHandler))
 
 				r.Route("/comments", func(r chi.Router) {
 					r.Put("/", app.createBoardCommentHandler)
